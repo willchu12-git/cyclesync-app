@@ -267,7 +267,12 @@ nav button.on{color:var(--rose-soft)}
         <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button>
         <button data-v="4">4</button><button data-v="5">5</button>
       </div>
-      <div class="note">These are observations, never predictions. Tap a selected number again to clear it.</div>
+      <label>Were you intimate that day?</label>
+      <div class="row tight" id="intimateRow">
+        <button class="sym" id="intimate_yes" data-tri="yes">Yes</button>
+        <button class="sym" id="intimate_no" data-tri="no">No</button>
+      </div>
+      <div class="note">These are observations, never predictions. Tap a selected number (or Yes/No) again to clear it.</div>
     </details>
     <label>Notes about her day</label>
     <textarea id="l_note" placeholder="what she said, how the evening went, anything worth remembering"></textarea>
@@ -367,7 +372,7 @@ nav button.on{color:var(--rose-soft)}
 <script>
 const EMBED = null;
 const DEFAULT_REPO = "willchu12-git/cyclesync-data";
-const BUILT = "2026-08-24 06:32";
+const BUILT = "2026-08-24 06:38";
 const LOCAL_API = "http://127.0.0.1:8777";
 const GENERIC = {"menstrual": {"energy": 2.2, "mood": 2.6, "workout_interest": 2.0, "intimacy_interest": 2.2}, "follicular": {"energy": 3.8, "mood": 3.8, "workout_interest": 3.8, "intimacy_interest": 3.2}, "ovulatory / fertile": {"energy": 4.2, "mood": 4.0, "workout_interest": 4.2, "intimacy_interest": 3.6}, "early luteal": {"energy": 3.3, "mood": 3.3, "workout_interest": 3.2, "intimacy_interest": 3.0}, "late luteal / premenstrual": {"energy": 2.5, "mood": 2.5, "workout_interest": 2.4, "intimacy_interest": 2.6}, "period expected / overdue": {"energy": 2.6, "mood": 2.6, "workout_interest": 2.5, "intimacy_interest": 2.6}};          /* kept in step with engine/scores.py at build time */
 
@@ -382,6 +387,7 @@ let STATE = null, BRIEF = null, QA = [], LIVE = null;
 let calCursor = null, selDay = null, tipVerdict = null;
 const picked = {energy:null, mood:null, intimacy_interest:null, workout_interest:null};
 let chosenSyms = [];
+let intimateToday = null;               /* true | false | null -- a fact, not a rating */
 
 function toast(msg, ms){
   const t = $("toast"); t.textContent = msg; t.classList.add("show");
@@ -991,6 +997,7 @@ function showDayEditor(iso){
     if(l.energy) o.push("energy " + l.energy + "/5");
     if(l.mood) o.push("mood " + l.mood + "/5");
     if(l.symptoms && l.symptoms.length) o.push(l.symptoms.join(", "));
+    if(l.intimate != null) o.push(l.intimate ? "intimate: yes" : "intimate: no");
     if(l.note) o.push("note saved");
     if(o.length) bits.push("Logged: " + o.join(" · ") + ".");
   }
@@ -1065,6 +1072,7 @@ function renderLoggedToday(){
   if(l.energy) bits.push("energy " + l.energy + "/5");
   if(l.mood) bits.push("mood " + l.mood + "/5");
   if(l.symptoms && l.symptoms.length) bits.push(l.symptoms.join(", "));
+  if(l.intimate != null) bits.push(l.intimate ? "intimate: yes" : "intimate: no");
   $("obs_when").textContent = "Already logged for that day: " + (bits.join(" · ") || "a note") +
     ". Saving again updates it.";
 }
@@ -1087,8 +1095,12 @@ function loadLogIntoForm(dateIso){
   chosenSyms = logSyms.filter(function(s){ return SYMPTOMS.indexOf(s) >= 0; });
   const extra = logSyms.filter(function(s){ return SYMPTOMS.indexOf(s) < 0; });
   $("sym_other").value = extra.join(", ");
-  Array.prototype.forEach.call(document.querySelectorAll(".sym"), function(b){
+  Array.prototype.forEach.call(document.querySelectorAll(".sym[data-s]"), function(b){
     b.classList.toggle("on", chosenSyms.indexOf(b.dataset.s) >= 0);
+  });
+  intimateToday = (l && l.intimate != null) ? l.intimate : null;
+  Array.prototype.forEach.call(document.querySelectorAll("#intimateRow button"), function(b){
+    b.classList.toggle("on", intimateToday != null && (b.dataset.tri === "yes") === intimateToday);
   });
   $("l_note").value = (l && l.note) || "";
   formDate = dateIso;
@@ -1139,6 +1151,18 @@ function buildScales(){
     });
   });
 }
+function buildIntimateToggle(){
+  Array.prototype.forEach.call(document.querySelectorAll("#intimateRow button"), function(b){
+    b.addEventListener("click", function(){
+      const v = b.dataset.tri === "yes";
+      const clearing = intimateToday === v;              /* tap again to clear */
+      intimateToday = clearing ? null : v;
+      Array.prototype.forEach.call(document.querySelectorAll("#intimateRow button"),
+        function(x){ x.classList.remove("on"); });
+      if(!clearing) b.classList.add("on");
+    });
+  });
+}
 
 async function saveLog(){
   const date = $("l_date").value || today();
@@ -1147,9 +1171,10 @@ async function saveLog(){
                symptoms: chosenSyms.concat(extra),
                intimacy_interest:picked.intimacy_interest,
                workout_interest:picked.workout_interest,
+               intimate: intimateToday,
                note:$("l_note").value || ""};
   const empty = !rec.energy && !rec.mood && !rec.symptoms.length && !rec.note &&
-                !rec.intimacy_interest && !rec.workout_interest;
+                !rec.intimacy_interest && !rec.workout_interest && rec.intimate == null;
   if(empty){ toast("Nothing to save yet"); return; }
   notePending("log", date, rec);
   formDate = date;             /* the form already matches what's being saved -- don't wipe it */
@@ -1229,7 +1254,7 @@ Array.prototype.forEach.call(document.querySelectorAll("nav button"), function(b
   b.addEventListener("click", function(){ showTab(b.dataset.tab); });
 });
 
-buildSymptoms(); buildScales(); initSettings();
+buildSymptoms(); buildScales(); buildIntimateToggle(); initSettings();
 $("l_date").value = today();
 $("l_date").addEventListener("change", function(){
   renderLoggedToday(); loadLogIntoForm($("l_date").value);
