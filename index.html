@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CycleSync">
+<meta name="theme-color" content="#121016">
+<meta name="robots" content="noindex,nofollow">
+<title>CycleSync</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#121016; --card:#1c1922; --card2:#242030; --line:#312b3d;
+  --ink:#f3eef6; --dim:#a79fb4; --faint:#6f6880;
+  --rose:#e86a8a; --rose-soft:#f2a3b8; --green:#5ec98a; --amber:#e8b45e; --blue:#7aa7f2;
+  --radius:18px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink); font:16px/1.55 -apple-system,BlinkMacSystemFont,
+  "SF Pro Text","Segoe UI",Roboto,sans-serif; -webkit-font-smoothing:antialiased;
+  padding:max(12px,env(safe-area-inset-top)) 14px calc(40px + env(safe-area-inset-bottom));
+  max-width:560px; margin:0 auto;
+}
+h1{font-size:19px;margin:0;letter-spacing:.2px}
+h2{font-size:15px;margin:0 0 10px;letter-spacing:.4px;text-transform:uppercase;color:var(--rose-soft)}
+p{margin:0 0 10px}
+p:last-child{margin-bottom:0}
+button,input,select,textarea{font:inherit;color:inherit}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.sub{color:var(--dim);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px;margin-bottom:12px}
+.hero{background:linear-gradient(160deg,#221c2c,#1a1620);text-align:center}
+.ring-wrap{position:relative;width:190px;height:190px;margin:4px auto 6px}
+.ring{transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:#2c2637;stroke-width:11}
+.ring-fg{fill:none;stroke:url(#g);stroke-width:11;stroke-linecap:round;
+  transition:stroke-dasharray .8s ease}
+.ring-mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:2px}
+.day-num{font-size:46px;font-weight:650;line-height:1;letter-spacing:-1px}
+.day-lbl{font-size:11px;letter-spacing:1.6px;color:var(--faint);text-transform:uppercase}
+.phase{font-size:17px;font-weight:600;color:var(--rose-soft);margin-top:6px}
+.count{font-size:14px;color:var(--dim);margin-top:6px}
+.window{font-size:13px;color:var(--faint);margin-top:4px}
+.chip{display:inline-block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;
+  padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--dim)}
+.chip.high{color:var(--green);border-color:#2f5c43}
+.chip.medium{color:var(--amber);border-color:#5c4a2c}
+.chip.low{color:var(--faint)}
+.chip.ok{color:var(--green);border-color:#2f5c43}
+.chip.warn{color:var(--amber);border-color:#5c4a2c}
+.brief p{color:#e6dfec}
+.brief ul{margin:6px 0 10px;padding-left:18px;color:#e6dfec}
+.brief li{margin:3px 0}
+.src{font-size:11px;color:var(--faint);margin-top:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row.tight{gap:6px}
+label{display:block;font-size:12px;color:var(--dim);margin:10px 0 5px;letter-spacing:.3px}
+input[type=date],input[type=text],input[type=password],textarea,select{
+  width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;
+  padding:11px 12px;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--rose)}
+textarea{min-height:74px;resize:vertical}
+.scale{display:flex;gap:6px}
+.scale button{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:12px;
+  padding:11px 0;font-size:15px;cursor:pointer}
+.scale button.on{background:var(--rose);border-color:var(--rose);color:#1a1016;font-weight:650}
+.sym{background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:7px 12px;
+  font-size:13px;cursor:pointer}
+.sym.on{background:#3a2432;border-color:var(--rose);color:var(--rose-soft)}
+.btn{width:100%;background:var(--rose);color:#1a1016;border:none;border-radius:14px;
+  padding:14px;font-weight:650;font-size:15px;cursor:pointer;margin-top:14px}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink);font-weight:500}
+.btn:active{opacity:.85}
+.check{display:flex;align-items:center;gap:9px;margin-top:10px;font-size:14px;color:var(--dim)}
+.check input{width:20px;height:20px;accent-color:var(--rose)}
+.tl{display:flex;flex-direction:column;gap:9px}
+.tl-row{display:grid;grid-template-columns:78px 1fr auto;align-items:center;gap:9px;
+  font-size:13px;padding-bottom:9px;border-bottom:1px solid var(--line)}
+.tl-row:last-child{border-bottom:none;padding-bottom:0}
+.bar{height:8px;border-radius:6px;background:#2c2637;position:relative;overflow:hidden}
+.bar span{position:absolute;top:0;bottom:0;left:0;background:linear-gradient(90deg,#7d3a52,var(--rose));
+  border-radius:6px}
+.err{font-size:12px;color:var(--faint);white-space:nowrap}
+.err.good{color:var(--green)}
+.err.mid{color:var(--amber)}
+.qa{border-left:2px solid var(--line);padding-left:11px;margin-bottom:12px}
+.qa .q{font-weight:600;font-size:14px}
+.qa .a{color:#ded7e6;font-size:14px;margin-top:5px;white-space:pre-wrap}
+.qa .when{font-size:11px;color:var(--faint);margin-top:4px}
+.note{font-size:12px;color:var(--faint);margin-top:10px;line-height:1.5}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));
+  background:#2b2436;border:1px solid var(--line);border-radius:12px;padding:11px 16px;font-size:14px;
+  opacity:0;pointer-events:none;transition:opacity .25s;max-width:90vw;text-align:center;z-index:9}
+.toast.show{opacity:1}
+details summary{cursor:pointer;color:var(--dim);font-size:13px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details[open] summary{margin-bottom:10px}
+.foot{color:var(--faint);font-size:11.5px;line-height:1.6;text-align:center;margin:18px 4px 0}
+.hide{display:none}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div>
+    <h1>CycleSync</h1>
+    <div class="sub" id="today">--</div>
+  </div>
+  <span class="chip" id="sync">loading</span>
+</div>
+
+<div class="card hero" id="hero">
+  <div class="ring-wrap">
+    <svg class="ring" width="190" height="190" viewBox="0 0 190 190">
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#7d3a52"/><stop offset="100%" stop-color="#f2a3b8"/>
+      </linearGradient></defs>
+      <circle class="ring-bg" cx="95" cy="95" r="80"/>
+      <circle class="ring-fg" id="ringfg" cx="95" cy="95" r="80" stroke-dasharray="0 502"/>
+    </svg>
+    <div class="ring-mid">
+      <div class="day-num" id="cday">--</div>
+      <div class="day-lbl">cycle day</div>
+    </div>
+  </div>
+  <div class="phase" id="phase">no data yet</div>
+  <div class="count" id="count">Log a period start to begin</div>
+  <div class="window" id="window"></div>
+  <div style="margin-top:10px"><span class="chip" id="conf"></span></div>
+</div>
+
+<div id="briefing"></div>
+
+<div class="card">
+  <h2>Log a period</h2>
+  <label>First day of bleeding</label>
+  <input type="date" id="p_start">
+  <div class="check"><input type="checkbox" id="p_start_approx"><span>I'm not sure of the exact day</span></div>
+  <label>Last day (leave blank if it's still going or I don't know)</label>
+  <input type="date" id="p_end">
+  <div class="check"><input type="checkbox" id="p_end_approx"><span>End date is a guess</span></div>
+  <label>Note (optional)</label>
+  <input type="text" id="p_note" placeholder="heavier than usual, etc.">
+  <button class="btn" id="p_save">Save period</button>
+</div>
+
+<div class="card">
+  <h2>What I observed today</h2>
+  <div class="sub" id="obs_when">Only fill in what I actually saw — blanks stay blank.</div>
+  <label>Her energy</label>
+  <div class="scale" data-scale="energy">
+    <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button>
+    <button data-v="4">4</button><button data-v="5">5</button>
+  </div>
+  <label>Her mood</label>
+  <div class="scale" data-scale="mood">
+    <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button>
+    <button data-v="4">4</button><button data-v="5">5</button>
+  </div>
+  <label>Symptoms she mentioned or I noticed</label>
+  <div class="row tight" id="syms"></div>
+  <input type="text" id="sym_other" placeholder="something else (comma separated)" style="margin-top:8px">
+  <details style="margin-top:14px">
+    <summary>Only if she expressed it — interest in intimacy / working out</summary>
+    <label>Interest in intimacy she expressed (leave blank unless she actually said or showed it)</label>
+    <div class="scale" data-scale="intimacy_interest">
+      <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button>
+      <button data-v="4">4</button><button data-v="5">5</button>
+    </div>
+    <label>Interest in working out</label>
+    <div class="scale" data-scale="workout_interest">
+      <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button>
+      <button data-v="4">4</button><button data-v="5">5</button>
+    </div>
+    <div class="note">These are observations, never predictions. Tap a selected number again to clear it.</div>
+  </details>
+  <label>Notes about her day</label>
+  <textarea id="l_note" placeholder="what she said, how the evening went, anything worth remembering"></textarea>
+  <button class="btn" id="l_save">Save today's log</button>
+</div>
+
+<div class="card">
+  <h2>Cycles — predicted vs actual</h2>
+  <div class="tl" id="timeline"></div>
+  <div class="note" id="acc"></div>
+</div>
+
+<div class="card">
+  <h2>Ask about her cycle</h2>
+  <textarea id="q" placeholder="e.g. is it normal for her to be this tired mid-cycle?"></textarea>
+  <button class="btn" id="q_send">Ask</button>
+  <div id="qa" style="margin-top:16px"></div>
+</div>
+
+<div class="card">
+  <details id="settings_wrap">
+    <summary>Settings &amp; connection</summary>
+    <label>Private data repo (owner/name)</label>
+    <input type="text" id="s_repo" placeholder="yourname/cyclesync-data" autocapitalize="off" autocorrect="off">
+    <label>GitHub token (fine-grained, Contents: read &amp; write on that repo)</label>
+    <input type="password" id="s_token" placeholder="github_pat_..." autocapitalize="off" autocorrect="off">
+    <div class="note">Stored only in this browser's local storage on this device. It never leaves
+      your phone except in requests to github.com. Nothing personal is ever stored in the public app repo.</div>
+    <button class="btn" id="s_save">Save &amp; sync</button>
+    <button class="btn ghost" id="s_refresh">Refresh now</button>
+    <div class="note" id="s_status"></div>
+  </details>
+</div>
+
+<div class="foot" id="foot"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const EMBED = null;
+const DEFAULT_REPO = "REPLACE-ME-USERNAME/cyclesync-data";
+const BUILT = "2026-08-23 14:38";
+const LOCAL_API = "http://127.0.0.1:8777";
+
+const $ = function(id){ return document.getElementById(id); };
+const ls = {
+  get: function(k, d){ try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); }
+                       catch(e){ return d; } },
+  set: function(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+};
+
+let STATE = null, BRIEF = null, QA = [];
+const picked = {energy:null, mood:null, intimacy_interest:null, workout_interest:null};
+let chosenSyms = [];
+
+function toast(msg, ms){
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  setTimeout(function(){ t.classList.remove("show"); }, ms || 2600);
+}
+function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
+function fmt(iso){
+  if(!iso) return "--";
+  const d = new Date(iso + "T12:00:00");
+  return d.toLocaleDateString(undefined, {month:"short", day:"numeric"});
+}
+function today(){ return new Date().toLocaleDateString("en-CA"); }
+
+/* ---------------------------------------------------------------- github */
+function cfg(){ return { repo: ls.get("cs_repo", DEFAULT_REPO) || "", token: ls.get("cs_token", "") || "" }; }
+function connected(){ const c = cfg(); return !!(c.repo && c.repo.indexOf("/") > 0 && c.token); }
+
+async function ghGet(path){
+  const c = cfg();
+  const r = await fetch("https://api.github.com/repos/" + c.repo + "/contents/" + path +
+                        "?ref=HEAD&t=" + Date.now(),
+    { headers: { Authorization: "Bearer " + c.token, Accept: "application/vnd.github.raw" } });
+  if(r.status === 404) return null;
+  if(!r.ok) throw new Error("GitHub " + r.status + " on " + path);
+  return await r.text();
+}
+async function ghPut(path, text, message){
+  const c = cfg();
+  const body = { message: message, content: btoa(unescape(encodeURIComponent(text))) };
+  const r = await fetch("https://api.github.com/repos/" + c.repo + "/contents/" + path, {
+    method: "PUT",
+    headers: { Authorization: "Bearer " + c.token, Accept: "application/vnd.github+json",
+               "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  if(!r.ok) throw new Error("GitHub " + r.status + ": " + (await r.text()).slice(0,140));
+  return await r.json();
+}
+
+/* offline queue: nothing typed on a train is ever lost */
+function queue(item){ const q = ls.get("cs_queue", []); q.push(item); ls.set("cs_queue", q); }
+async function flush(){
+  let q = ls.get("cs_queue", []);
+  if(!q.length || !connected()) return q.length;
+  const left = [];
+  for(const item of q){
+    try { await ghPut(item.path, item.text, item.message); }
+    catch(e){ left.push(item); }
+  }
+  ls.set("cs_queue", left);
+  if(q.length && !left.length) toast("Synced " + q.length + " pending item(s)");
+  return left.length;
+}
+
+function stamp(){ return new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19); }
+
+async function send(path, text, message, okMsg){
+  if(EMBED){                                    // local build: talk to engine/serve.py if it's up
+    try {
+      const r = await fetch(LOCAL_API + "/api/write", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({path:path, text:text})
+      });
+      if(r.ok){ toast(okMsg + " (saved locally)"); return true; }
+    } catch(e){}
+  }
+  if(!connected()){
+    queue({path:path, text:text, message:message});
+    toast("Saved on this device — add a token in Settings to sync");
+    return false;
+  }
+  try {
+    await ghPut(path, text, message);
+    toast(okMsg);
+    return true;
+  } catch(e){
+    queue({path:path, text:text, message:message});
+    toast("Offline — queued, will sync later");
+    return false;
+  }
+}
+
+/* ----------------------------------------------------------------- load */
+async function load(){
+  if(EMBED){
+    STATE = EMBED.state; BRIEF = EMBED.briefing; QA = EMBED.qa || [];
+    $("sync").textContent = "local"; $("sync").className = "chip ok";
+    render(); return;
+  }
+  const cached = ls.get("cs_cache", null);
+  if(cached){ STATE = cached.state; BRIEF = cached.briefing; QA = cached.qa || []; render(); }
+  if(!connected()){
+    $("sync").textContent = "not connected"; $("sync").className = "chip warn";
+    if(!cached){ $("settings_wrap").open = true; }
+    return;
+  }
+  $("sync").textContent = "syncing"; $("sync").className = "chip";
+  try {
+    const [s, b, q] = await Promise.all([
+      ghGet("data/store/state.json"),
+      ghGet("data/store/briefing.json"),
+      ghGet("data/store/qa.jsonl")
+    ]);
+    STATE = s ? JSON.parse(s) : null;
+    BRIEF = b ? JSON.parse(b) : null;
+    QA = (q || "").split("\n").filter(function(x){ return x.trim(); })
+          .map(function(x){ try { return JSON.parse(x); } catch(e){ return null; } })
+          .filter(Boolean);
+    ls.set("cs_cache", {state:STATE, briefing:BRIEF, qa:QA.slice(-12)});
+    $("sync").textContent = "synced"; $("sync").className = "chip ok";
+    render();
+  } catch(e){
+    $("sync").textContent = "sync failed"; $("sync").className = "chip warn";
+    $("s_status").textContent = String(e.message || e);
+  }
+  await flush();
+}
+
+/* --------------------------------------------------------------- render */
+function mdish(text){
+  return String(text || "").split(/\n\s*\n/).map(function(block){
+    const lines = block.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
+    const bullets = lines.filter(function(l){ return /^[•\-*]\s+/.test(l); });
+    if(bullets.length && bullets.length === lines.length){
+      return "<ul>" + lines.map(function(l){
+        return "<li>" + esc(l.replace(/^[•\-*]\s+/, "")) + "</li>"; }).join("") + "</ul>";
+    }
+    return "<p>" + esc(lines.join(" ")) + "</p>";
+  }).join("");
+}
+
+function render(){
+  $("today").textContent = new Date().toLocaleDateString(undefined,
+    {weekday:"long", month:"long", day:"numeric"});
+  renderHero(); renderBrief(); renderTimeline(); renderQA(); renderLoggedToday();
+  $("foot").textContent = (STATE && STATE.disclaimer) ? STATE.disclaimer :
+    "Not medical advice. Predictions are estimates from sparse data. Her own words always win.";
+  if(BUILT) $("foot").textContent += "  ·  app built " + BUILT;
+}
+
+function renderHero(){
+  const e = STATE && STATE.estimate;
+  const C = 2 * Math.PI * 80;
+  if(!e || e.status !== "ok"){
+    $("ringfg").setAttribute("stroke-dasharray", "0 " + C);
+    $("conf").textContent = ""; return;
+  }
+  const span = e.typical_cycle_length || 28;
+  const frac = Math.max(0.02, Math.min(1, e.cycle_day / span));
+  $("ringfg").setAttribute("stroke-dasharray", (C * frac).toFixed(1) + " " + C);
+  $("cday").textContent = e.cycle_day;
+  $("phase").textContent = e.phase;
+  const d = e.days_until_next_period;
+  $("count").textContent = d > 1 ? ("Period expected in " + d + " days · ~" + fmt(e.predicted_next_period))
+    : d === 1 ? "Period expected tomorrow"
+    : d === 0 ? "Period expected today"
+    : (Math.abs(d) + " days past the estimate");
+  $("window").textContent = "Anywhere from " + fmt(e.predicted_window[0]) + " to " +
+    fmt(e.predicted_window[1]) + " · typical cycle " + span + " ± " +
+    e.cycle_length_variability_days + " days";
+  $("conf").textContent = e.confidence + " confidence · " + e.cycles_used + " cycles used";
+  $("conf").className = "chip " + e.confidence;
+}
+
+function renderBrief(){
+  const box = $("briefing");
+  const secs = [["overview","Overview"],["show_up","How to show up for her"],
+                ["connection","Connection & intimacy"],["movement","Movement"]];
+  if(!BRIEF){
+    box.innerHTML = '<div class="card"><h2>Today\'s briefing</h2><p class="sub">' +
+      'No briefing yet. It is written every morning by the daily job — or run ' +
+      '<code>py engine/brief.py</code> on the PC.</p></div>';
+    return;
+  }
+  let html = "";
+  if(BRIEF.headline){
+    html += '<div class="card brief"><p style="color:var(--rose-soft);font-weight:600;margin:0">' +
+            esc(BRIEF.headline) + "</p></div>";
+  }
+  secs.forEach(function(s){
+    if(!BRIEF[s[0]]) return;
+    html += '<div class="card brief"><h2>' + s[1] + "</h2>" + mdish(BRIEF[s[0]]) + "</div>";
+  });
+  html += '<div class="src">Briefing for ' + esc(BRIEF.date || "") +
+          (BRIEF.source === "fallback" ? " · written offline by the engine (Claude was unreachable)"
+                                       : " · written by Claude") + "</div>";
+  box.innerHTML = html;
+}
+
+function renderTimeline(){
+  const rows = (STATE && STATE.history) || [];
+  const box = $("timeline");
+  if(!rows.length){ box.innerHTML = '<div class="sub">No periods logged yet.</div>'; return; }
+  const shown = rows.slice(-10).reverse();
+  const maxSpan = 45;
+  box.innerHTML = shown.map(function(r){
+    const span = r.actual ? Math.round((new Date(r.actual) - new Date(r.start)) / 86400000) : null;
+    const pct = span ? Math.min(100, (span / maxSpan) * 100) : 12;
+    let err = "", cls = "err";
+    if(r.error_days === null || r.error_days === undefined){
+      err = span ? (span + "d") : "current";
+    } else {
+      const a = Math.abs(r.error_days);
+      cls += a <= 2 ? " good" : (a <= 4 ? " mid" : "");
+      err = (r.error_days === 0 ? "spot on" :
+             (r.error_days > 0 ? "+" : "") + r.error_days + "d") + " · " + span + "d";
+    }
+    return '<div class="tl-row"><div>' + fmt(r.start) + (r.start_approx ? " ~" : "") +
+           '</div><div class="bar"><span style="width:' + pct.toFixed(0) + '%"></span></div>' +
+           '<div class="' + cls + '">' + err + "</div></div>";
+  }).join("");
+  const a = (STATE && STATE.accuracy) || {};
+  $("acc").textContent = a.note || "";
+}
+
+function renderQA(){
+  const box = $("qa");
+  if(!QA.length){ box.innerHTML = '<div class="sub">Nothing asked yet.</div>'; return; }
+  box.innerHTML = QA.slice(-6).reverse().map(function(r){
+    return '<div class="qa"><div class="q">' + esc(r.question) + '</div><div class="a">' +
+           esc(r.answer) + '</div><div class="when">' + esc(r.asked_at || r.date || "") +
+           "</div></div>";
+  }).join("");
+}
+
+function renderLoggedToday(){
+  const l = STATE && STATE.logged_today;
+  if(!l){ $("obs_when").textContent = "Only fill in what I actually saw — blanks stay blank."; return; }
+  const bits = [];
+  if(l.energy) bits.push("energy " + l.energy + "/5");
+  if(l.mood) bits.push("mood " + l.mood + "/5");
+  if(l.symptoms && l.symptoms.length) bits.push(l.symptoms.join(", "));
+  $("obs_when").textContent = "Already logged today: " + (bits.join(" · ") || "a note") +
+    ". Saving again updates it.";
+}
+
+/* ------------------------------------------------------------- controls */
+const SYMPTOMS = ["cramps","fatigue","headache","bloating","back pain","breast tenderness",
+                  "irritability","anxious","low mood","cravings","nausea","acne",
+                  "trouble sleeping","clear skin","energetic"];
+
+function buildSymptoms(){
+  $("syms").innerHTML = SYMPTOMS.map(function(s){
+    return '<button class="sym" data-s="' + s + '">' + s + "</button>"; }).join("");
+  Array.prototype.forEach.call(document.querySelectorAll(".sym"), function(b){
+    b.addEventListener("click", function(){
+      const s = b.dataset.s;
+      if(chosenSyms.indexOf(s) >= 0){ chosenSyms = chosenSyms.filter(function(x){ return x !== s; }); }
+      else { chosenSyms.push(s); }
+      b.classList.toggle("on");
+    });
+  });
+}
+function buildScales(){
+  Array.prototype.forEach.call(document.querySelectorAll(".scale"), function(sc){
+    const field = sc.dataset.scale;
+    Array.prototype.forEach.call(sc.querySelectorAll("button"), function(b){
+      b.addEventListener("click", function(){
+        const v = Number(b.dataset.v);
+        const clearing = picked[field] === v;             // tap again to clear
+        picked[field] = clearing ? null : v;
+        Array.prototype.forEach.call(sc.querySelectorAll("button"), function(x){
+          x.classList.remove("on"); });
+        if(!clearing) b.classList.add("on");
+      });
+    });
+  });
+}
+
+async function savePeriod(){
+  const start = $("p_start").value;
+  if(!start){ toast("A start date is required"); return; }
+  const rec = {kind:"period", start:start, end:$("p_end").value || null,
+               start_approx:$("p_start_approx").checked, end_approx:$("p_end_approx").checked,
+               note:$("p_note").value || ""};
+  const ok = await send("inbox/" + stamp() + "-period.json", JSON.stringify(rec, null, 2),
+                        "log: period " + start, "Period saved");
+  if(ok){ $("p_note").value = ""; setTimeout(load, 1500); }
+}
+
+async function saveLog(){
+  const extra = ($("sym_other").value || "").split(",").map(function(s){ return s.trim(); })
+                 .filter(Boolean);
+  const rec = {kind:"log", date: today(), energy:picked.energy, mood:picked.mood,
+               symptoms: chosenSyms.concat(extra),
+               intimacy_interest:picked.intimacy_interest,
+               workout_interest:picked.workout_interest,
+               note:$("l_note").value || ""};
+  const empty = !rec.energy && !rec.mood && !rec.symptoms.length && !rec.note &&
+                !rec.intimacy_interest && !rec.workout_interest;
+  if(empty){ toast("Nothing to save yet"); return; }
+  const ok = await send("inbox/" + stamp() + "-log.json", JSON.stringify(rec, null, 2),
+                        "log: observations " + rec.date, "Logged");
+  if(ok){ setTimeout(load, 1500); }
+}
+
+async function askQuestion(){
+  const q = ($("q").value || "").trim();
+  if(!q){ return; }
+  $("q_send").textContent = "Asking...";
+  if(EMBED){
+    try {
+      const r = await fetch(LOCAL_API + "/api/ask", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({question:q})
+      });
+      if(r.ok){
+        const j = await r.json();
+        QA.push({question:q, answer:j.answer, asked_at:new Date().toISOString()});
+        $("q").value = ""; renderQA(); $("q_send").textContent = "Ask"; return;
+      }
+    } catch(e){}
+  }
+  const ok = await send("ask/" + stamp() + ".txt", q, "ask: " + q.slice(0, 60),
+                        "Sent — the answer lands here in a minute or two");
+  $("q_send").textContent = "Ask";
+  if(ok){ $("q").value = ""; setTimeout(load, 60000); }
+}
+
+/* ------------------------------------------------------------------ init */
+function initSettings(){
+  const c = cfg();
+  $("s_repo").value = c.repo; $("s_token").value = c.token;
+  $("s_save").addEventListener("click", async function(){
+    ls.set("cs_repo", $("s_repo").value.trim());
+    ls.set("cs_token", $("s_token").value.trim());
+    $("s_status").textContent = "Saved. Syncing...";
+    await load(); await flush();
+    $("s_status").textContent = connected() ? "Connected." : "Add both a repo and a token.";
+  });
+  $("s_refresh").addEventListener("click", load);
+}
+
+buildSymptoms(); buildScales(); initSettings();
+$("p_save").addEventListener("click", savePeriod);
+$("l_save").addEventListener("click", saveLog);
+$("q_send").addEventListener("click", askQuestion);
+$("p_start").value = today();
+load();
+if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(function(){}); }
+</script>
+</body>
+</html>
