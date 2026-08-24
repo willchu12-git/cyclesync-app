@@ -71,6 +71,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .dial.unknown .v{color:var(--faint);font-size:18px}
 .dial.unknown .meter span{background:#3c3448}
 .basis{font-size:11px;color:var(--faint);margin-top:6px;line-height:1.4}
+.caveat{font-size:10.5px;color:var(--rose-soft);margin-top:5px;line-height:1.4;font-style:italic}
 .takeaway{font-size:15.5px;line-height:1.5;margin:14px 0 0;color:#ece5f2}
 .tip{margin-top:12px;background:#241b28;border:1px solid #3a2b3f;border-radius:14px;padding:12px}
 .tip .lab{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--rose-soft)}
@@ -358,9 +359,9 @@ nav button.on{color:var(--rose-soft)}
 <script>
 const EMBED = null;
 const DEFAULT_REPO = "willchu12-git/cyclesync-data";
-const BUILT = "2026-08-24 05:56";
+const BUILT = "2026-08-24 06:09";
 const LOCAL_API = "http://127.0.0.1:8777";
-const GENERIC = {"menstrual": {"energy": 2.2, "mood": 2.6, "workout_interest": 2.0}, "follicular": {"energy": 3.8, "mood": 3.8, "workout_interest": 3.8}, "ovulatory / fertile": {"energy": 4.2, "mood": 4.0, "workout_interest": 4.2}, "early luteal": {"energy": 3.3, "mood": 3.3, "workout_interest": 3.2}, "late luteal / premenstrual": {"energy": 2.5, "mood": 2.5, "workout_interest": 2.4}, "period expected / overdue": {"energy": 2.6, "mood": 2.6, "workout_interest": 2.5}};          /* kept in step with engine/scores.py at build time */
+const GENERIC = {"menstrual": {"energy": 2.2, "mood": 2.6, "workout_interest": 2.0, "intimacy_interest": 2.2}, "follicular": {"energy": 3.8, "mood": 3.8, "workout_interest": 3.8, "intimacy_interest": 3.2}, "ovulatory / fertile": {"energy": 4.2, "mood": 4.0, "workout_interest": 4.2, "intimacy_interest": 3.6}, "early luteal": {"energy": 3.3, "mood": 3.3, "workout_interest": 3.2, "intimacy_interest": 3.0}, "late luteal / premenstrual": {"energy": 2.5, "mood": 2.5, "workout_interest": 2.4, "intimacy_interest": 2.6}, "period expected / overdue": {"energy": 2.6, "mood": 2.6, "workout_interest": 2.5, "intimacy_interest": 2.6}};          /* kept in step with engine/scores.py at build time */
 
 const $ = function(id){ return document.getElementById(id); };
 const ls = {
@@ -395,7 +396,7 @@ function daysBetween(a, b){ return dnum(b) - dnum(a); }
    updates every number on screen instantly instead of a minute later. The
    cloud recomputes the same thing and its answer overwrites this one.
    ==================================================================== */
-const MIN_GAP = 18, MAX_GAP = 45, RECENT_N = 6, K_BLEND = 3;
+const MIN_GAP = 18, MAX_GAP = 45, RECENT_N = 6, K_BLEND = 3, K_LIBIDO = 1;
 
 function median(xs){
   const a = xs.slice().sort(function(x,y){ return x-y; });
@@ -559,8 +560,8 @@ const WORDS = {
           [4.2,"likely good"],[99,"likely high"]],
   mood:[[1.8,"may be having a hard day"],[2.5,"may be tender or short"],[3.4,"probably steady"],
         [4.2,"likely upbeat"],[99,"likely bright"]],
-  libido:[[1.8,"she has expressed little"],[2.5,"she has expressed some"],[3.4,"mixed in your logs"],
-          [4.2,"she has expressed interest"],[99,"she has expressed a lot"]],
+  libido:[[1.8,"tends to run low here"],[2.5,"tends to run on the lower side here"],
+          [3.4,"mixed / no strong lean"],[4.2,"tends to run higher here"],[99,"tends to run high here"]],
   workout:[[1.8,"rest is likely what helps"],[2.5,"gentle movement at most"],[3.4,"a walk may appeal"],
            [4.2,"likely up for a session"],[99,"likely up for something hard"]]
 };
@@ -579,11 +580,11 @@ function dials(est, phases){
     const vals = entry ? (entry[field] || []) : [];
     const n = vals.length;
     const mean = n ? vals.reduce(function(a,b){ return a+b; }, 0) / n : null;
-    let generic = (GENERIC[phase] || {})[field];
-    if(key === "libido") generic = undefined;      /* never guessed -- see scores.py */
+    const generic = (GENERIC[phase] || {})[field];
+    const k = key === "libido" ? K_LIBIDO : K_BLEND;
     let value = null, basis = "", confidence = "none";
     if(mean != null){
-      const w = n / (n + K_BLEND);
+      const w = n / (n + k);
       value = (generic !== undefined) ? (w*mean + (1-w)*generic) : mean;
       basis = w >= 0.5 ? ("her logs (" + n + " day" + (n===1?"":"s") + " in this phase)")
                        : ("mostly the generic pattern — only " + n + " log" + (n===1?"":"s") + " here");
@@ -596,8 +597,14 @@ function dials(est, phases){
     }
     if(conf === "low" && confidence === "high") confidence = "medium";
     value = Math.round(Math.min(5, Math.max(1, value)) * 10) / 10;
-    return {key:key, label:label, value:value, pct: Math.round((value-1)/4*100),
-            word: wordFor(key, value), basis:basis, confidence:confidence, n:n};
+    const out = {key:key, label:label, value:value, pct: Math.round((value-1)/4*100),
+                word: wordFor(key, value), basis:basis, confidence:confidence, n:n};
+    if(key === "libido"){
+      out.caveat = "Not a forecast and never a green light — weakly supported and highly " +
+                   "individual even when it's her own data. Only what she says and shows in " +
+                   "the moment is a real signal, and it overrides this completely.";
+    }
+    return out;
   });
 }
 
@@ -785,7 +792,8 @@ function renderDash(){
       '<div class="v">' + (unknown ? "—" : esc(d.value) + ' <small>/5</small>') + "</div>" +
       '<div class="w">' + esc(d.word) + "</div>" +
       '<div class="meter"><span style="width:' + (unknown ? 0 : d.pct) + '%"></span></div>' +
-      '<div class="basis">' + esc(d.basis) + '</div></div>';
+      '<div class="basis">' + esc(d.basis) + '</div>' +
+      (d.caveat ? '<div class="caveat">' + esc(d.caveat) + '</div>' : '') + '</div>';
   }).join("");
   const grounded = ds.filter(function(d){ return d.n; }).length;
   const est = LIVE.estimate;
