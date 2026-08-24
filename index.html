@@ -72,6 +72,13 @@ button,input,select,textarea{font:inherit;color:inherit}
 .dial.unknown .meter span{background:#3c3448}
 .basis{font-size:11px;color:var(--faint);margin-top:6px;line-height:1.4}
 .caveat{font-size:10.5px;color:var(--rose-soft);margin-top:5px;line-height:1.4;font-style:italic}
+.bw{display:flex;gap:8px;align-items:flex-start;margin-top:12px;padding:10px 12px;
+  border-radius:12px;background:var(--card2);border:1px solid var(--line);font-size:13px;
+  line-height:1.4;color:#e6dfec}
+.bw .dot{width:9px;height:9px;border-radius:50%;margin-top:4px;flex:none}
+.bw.low .dot{background:var(--amber)}
+.bw.medium .dot{background:var(--blue)}
+.bw.steady .dot{background:var(--green)}
 .takeaway{font-size:15.5px;line-height:1.5;margin:14px 0 0;color:#ece5f2}
 .tip{margin-top:12px;background:#241b28;border:1px solid #3a2b3f;border-radius:14px;padding:12px}
 .tip .lab{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--rose-soft)}
@@ -191,6 +198,7 @@ nav button.on{color:var(--rose-soft)}
     <h2>Today at a glance</h2>
     <div class="dials" id="dials"></div>
     <div class="basis" id="grounding"></div>
+    <div class="bw" id="bandwidth"></div>
     <p class="takeaway" id="takeaway">--</p>
     <div class="tip" id="tipbox">
       <div class="lab">One thing that would help today</div>
@@ -359,7 +367,7 @@ nav button.on{color:var(--rose-soft)}
 <script>
 const EMBED = null;
 const DEFAULT_REPO = "willchu12-git/cyclesync-data";
-const BUILT = "2026-08-24 06:14";
+const BUILT = "2026-08-24 06:23";
 const LOCAL_API = "http://127.0.0.1:8777";
 const GENERIC = {"menstrual": {"energy": 2.2, "mood": 2.6, "workout_interest": 2.0, "intimacy_interest": 2.2}, "follicular": {"energy": 3.8, "mood": 3.8, "workout_interest": 3.8, "intimacy_interest": 3.2}, "ovulatory / fertile": {"energy": 4.2, "mood": 4.0, "workout_interest": 4.2, "intimacy_interest": 3.6}, "early luteal": {"energy": 3.3, "mood": 3.3, "workout_interest": 3.2, "intimacy_interest": 3.0}, "late luteal / premenstrual": {"energy": 2.5, "mood": 2.5, "workout_interest": 2.4, "intimacy_interest": 2.6}, "period expected / overdue": {"energy": 2.6, "mood": 2.6, "workout_interest": 2.5, "intimacy_interest": 2.6}};          /* kept in step with engine/scores.py at build time */
 
@@ -608,6 +616,24 @@ function dials(est, phases){
   });
 }
 
+const BANDWIDTH = [
+  [2.4, "low", "Lower-bandwidth day — good day to keep things simple, take things off her " +
+              "plate rather than add to it, and hold anything that needs a real conversation " +
+              "for a steadier moment."],
+  [3.4, "medium", "Middling day — fine for small stuff; if something bigger needs to be " +
+                 "discussed, a calmer moment may land better."],
+  [99, "steady", "Steadier day — a reasonable day to bring things up together if you need to."]
+];
+function bandwidth(ds){
+  const by = {}; ds.forEach(function(d){ by[d.key] = d; });
+  const vals = ["energy","mood"].map(function(k){ return (by[k]||{}).value; })
+                                .filter(function(v){ return v != null; });
+  if(!vals.length) return null;
+  const avg = vals.reduce(function(a,b){ return a+b; }, 0) / vals.length;
+  for(const row of BANDWIDTH){ if(avg < row[0]) return {level:row[1], text:row[2]}; }
+  return {level:"steady", text:BANDWIDTH[BANDWIDTH.length-1][2]};
+}
+
 /* the whole local recompute, from raw marks to what's on screen */
 function recompute(){
   const cfg = (STATE && STATE.config && STATE.config.cycle) ||
@@ -618,8 +644,9 @@ function recompute(){
   const cycles = deriveCycles(days, today());
   const est = estimate(cycles, today(), cfg);
   const phases = perPhase(logs, cycles, cfg);
+  const ds = dials(est, phases);
   return {estimate: est, cycles: cycles, days: days, logs: logs, phases: phases,
-          dials: dials(est, phases),
+          dials: ds, bandwidth: bandwidth(ds),
           marks: days.filter(function(d){ return d.period; })
                      .reduce(function(m, d){ m[d.date] = d; return m; }, {})};
 }
@@ -778,7 +805,7 @@ function render(){
   $("today").textContent = new Date().toLocaleDateString(undefined,
     {weekday:"long", month:"long", day:"numeric"});
   renderDash(); renderHero(); renderBrief(); renderCalendar(); renderTimeline();
-  renderQA(); renderFeedback(); renderLoggedToday(); renderDevice();
+  renderQA(); renderFeedback(); renderLoggedToday(); renderDevice(); ensureFormMatchesDate();
   $("foot").textContent = (STATE && STATE.disclaimer) ? STATE.disclaimer :
     "Not medical advice. Predictions are estimates from sparse data. Her own words always win.";
 }
@@ -801,6 +828,16 @@ function renderDash(){
     ? (grounded + " of 4 dials are using her own logs · prediction confidence " +
        (est.confidence || "--") + " · tap Calendar to correct any day")
     : "Mark her period days in the Calendar tab to start.";
+
+  const bw = LIVE.bandwidth;
+  const bwEl = $("bandwidth");
+  if(bw){
+    bwEl.className = "bw " + bw.level;
+    bwEl.innerHTML = '<span class="dot"></span><span>' + esc(bw.text) + "</span>";
+    bwEl.classList.remove("hide");
+  } else {
+    bwEl.classList.add("hide");
+  }
 
   const fresh = briefMatches();
   $("takeaway").textContent = (fresh && BRIEF && BRIEF.takeaway) ? BRIEF.takeaway
@@ -1032,6 +1069,35 @@ function renderLoggedToday(){
     ". Saving again updates it.";
 }
 
+/* fills the observation form from whatever's already logged for a date (or clears it if
+   nothing is). Only called when the SELECTED DATE changes -- never from the general render()
+   loop for that same date, so it can't wipe out something you're mid-typing. */
+let formDate = null;
+function loadLogIntoForm(dateIso){
+  const l = LIVE.logs.filter(function(x){ return x.date === dateIso; })[0] || null;
+  ["energy", "mood", "intimacy_interest", "workout_interest"].forEach(function(field){
+    picked[field] = (l && l[field] != null) ? l[field] : null;
+    const sc = document.querySelector('.scale[data-scale="' + field + '"]');
+    if(!sc) return;
+    Array.prototype.forEach.call(sc.querySelectorAll("button"), function(b){
+      b.classList.toggle("on", picked[field] != null && Number(b.dataset.v) === picked[field]);
+    });
+  });
+  const logSyms = (l && l.symptoms) || [];
+  chosenSyms = logSyms.filter(function(s){ return SYMPTOMS.indexOf(s) >= 0; });
+  const extra = logSyms.filter(function(s){ return SYMPTOMS.indexOf(s) < 0; });
+  $("sym_other").value = extra.join(", ");
+  Array.prototype.forEach.call(document.querySelectorAll(".sym"), function(b){
+    b.classList.toggle("on", chosenSyms.indexOf(b.dataset.s) >= 0);
+  });
+  $("l_note").value = (l && l.note) || "";
+  formDate = dateIso;
+}
+function ensureFormMatchesDate(){
+  const d = $("l_date").value || today();
+  if(formDate !== d) loadLogIntoForm(d);
+}
+
 function renderDevice(){
   const q = ls.get("cs_queue", []).length;
   const pd = Object.keys(pendingDays()).length + Object.keys(pendingLogs()).length;
@@ -1086,17 +1152,11 @@ async function saveLog(){
                 !rec.intimacy_interest && !rec.workout_interest;
   if(empty){ toast("Nothing to save yet"); return; }
   notePending("log", date, rec);
+  formDate = date;             /* the form already matches what's being saved -- don't wipe it */
   render();
   const ok = await send("inbox/" + stamp() + "-log.json", JSON.stringify(rec, null, 2),
                         "log: observations " + date, "Logged");
-  if(ok){
-    $("l_note").value = ""; $("sym_other").value = "";
-    chosenSyms = [];
-    Array.prototype.forEach.call(document.querySelectorAll(".sym.on,.scale button.on"),
-      function(b){ b.classList.remove("on"); });
-    Object.keys(picked).forEach(function(k){ picked[k] = null; });
-    setTimeout(function(){ load(true); }, 45000);
-  }
+  if(ok) setTimeout(function(){ load(true); }, 45000);
 }
 
 async function sendFeedback(verdict, text, about){
@@ -1171,7 +1231,9 @@ Array.prototype.forEach.call(document.querySelectorAll("nav button"), function(b
 
 buildSymptoms(); buildScales(); initSettings();
 $("l_date").value = today();
-$("l_date").addEventListener("change", renderLoggedToday);
+$("l_date").addEventListener("change", function(){
+  renderLoggedToday(); loadLogIntoForm($("l_date").value);
+});
 $("l_save").addEventListener("click", saveLog);
 $("q_send").addEventListener("click", askQuestion);
 $("hrefresh").addEventListener("click", function(){ load(); toast("Refreshing…", 1200); });
@@ -1183,7 +1245,7 @@ $("mark_yes").addEventListener("click", function(){ if(selDay) markDay(selDay, t
 $("mark_no").addEventListener("click", function(){ if(selDay) markDay(selDay, false); });
 $("mark_log").addEventListener("click", function(){
   if(!selDay) return;
-  $("l_date").value = selDay; showTab("today"); renderLoggedToday();
+  $("l_date").value = selDay; showTab("today"); renderLoggedToday(); loadLogIntoForm(selDay);
   toast("Logging observations for " + fmt(selDay));
 });
 $("period_today").addEventListener("click", function(){ markDay(today(), true); });
