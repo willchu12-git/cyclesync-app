@@ -158,6 +158,14 @@ textarea{min-height:74px;resize:vertical}
 .qa .q{font-weight:600;font-size:14px}
 .qa .a{color:#ded7e6;font-size:14px;margin-top:5px;white-space:pre-wrap}
 .qa .when{font-size:11px;color:var(--faint);margin-top:4px}
+.qa.pending{border-left-color:var(--rose)}
+.qa .a.thinking{color:var(--dim);display:flex;align-items:center;gap:6px}
+.dots{display:inline-flex;gap:3px}
+.dots span{width:5px;height:5px;border-radius:50%;background:var(--rose-soft);
+  animation:pulse 1.1s ease-in-out infinite}
+.dots span:nth-child(2){animation-delay:.15s}
+.dots span:nth-child(3){animation-delay:.3s}
+@keyframes pulse{0%,60%,100%{opacity:.25}30%{opacity:1}}
 .note{font-size:12px;color:var(--faint);margin-top:10px;line-height:1.5}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom));
   background:#2b2436;border:1px solid var(--line);border-radius:12px;padding:11px 16px;font-size:14px;
@@ -372,7 +380,7 @@ nav button.on{color:var(--rose-soft)}
 <script>
 const EMBED = null;
 const DEFAULT_REPO = "willchu12-git/cyclesync-data";
-const BUILT = "2026-08-24 06:38";
+const BUILT = "2026-08-24 06:42";
 const LOCAL_API = "http://127.0.0.1:8777";
 const GENERIC = {"menstrual": {"energy": 2.2, "mood": 2.6, "workout_interest": 2.0, "intimacy_interest": 2.2}, "follicular": {"energy": 3.8, "mood": 3.8, "workout_interest": 3.8, "intimacy_interest": 3.2}, "ovulatory / fertile": {"energy": 4.2, "mood": 4.0, "workout_interest": 4.2, "intimacy_interest": 3.6}, "early luteal": {"energy": 3.3, "mood": 3.3, "workout_interest": 3.2, "intimacy_interest": 3.0}, "late luteal / premenstrual": {"energy": 2.5, "mood": 2.5, "workout_interest": 2.4, "intimacy_interest": 2.6}, "period expected / overdue": {"energy": 2.6, "mood": 2.6, "workout_interest": 2.5, "intimacy_interest": 2.6}};          /* kept in step with engine/scores.py at build time */
 
@@ -388,6 +396,7 @@ let calCursor = null, selDay = null, tipVerdict = null;
 const picked = {energy:null, mood:null, intimacy_interest:null, workout_interest:null};
 let chosenSyms = [];
 let intimateToday = null;               /* true | false | null -- a fact, not a rating */
+let pendingQuestion = null;             /* {question, askedAt} while waiting on the cloud */
 
 function toast(msg, ms){
   const t = $("toast"); t.textContent = msg; t.classList.add("show");
@@ -1040,12 +1049,19 @@ function renderTimeline(){
 
 function renderQA(){
   const box = $("qa");
-  if(!QA.length){ box.innerHTML = '<div class="sub">Nothing asked yet.</div>'; return; }
-  box.innerHTML = QA.slice(-6).reverse().map(function(r){
+  let html = "";
+  if(pendingQuestion){
+    html += '<div class="qa pending"><div class="q">' + esc(pendingQuestion.question) +
+            '</div><div class="a thinking">Thinking<span class="dots"><span></span><span>' +
+            '</span><span></span></span></div></div>';
+  }
+  if(!QA.length && !pendingQuestion){ box.innerHTML = '<div class="sub">Nothing asked yet.</div>'; return; }
+  html += QA.slice(-6).reverse().map(function(r){
     return '<div class="qa"><div class="q">' + esc(r.question) + '</div><div class="a">' +
            esc(r.answer) + '</div><div class="when">' + esc(r.asked_at || r.date || "") +
            "</div></div>";
   }).join("");
+  box.innerHTML = html;
 }
 
 function renderFeedback(){
@@ -1210,10 +1226,31 @@ async function askQuestion(){
       }
     } catch(e){}
   }
+  const beforeCount = QA.length;
   const ok = await send("ask/" + stamp() + ".txt", q, "ask: " + q.slice(0, 60),
-                        "Sent — the answer lands here in a minute or two");
+                        "Sent — watching for the answer…");
   $("q_send").textContent = "Ask";
-  if(ok){ $("q").value = ""; setTimeout(function(){ load(true); }, 60000); }
+  if(ok){
+    $("q").value = "";
+    pendingQuestion = {question: q, askedAt: new Date().toISOString()};
+    renderQA();
+    pollForAnswer(beforeCount, 0);
+  }
+}
+
+/* short-interval polling with a visible "thinking" state, instead of one blind 60s wait */
+async function pollForAnswer(beforeCount, attempt){
+  const MAX_ATTEMPTS = 9;             /* ~9 checks, roughly 2 minutes total */
+  if(attempt >= MAX_ATTEMPTS){
+    pendingQuestion = null; renderQA();
+    toast("Still working on it — pull to refresh in a bit");
+    return;
+  }
+  setTimeout(async function(){
+    await load(true);
+    if(QA.length > beforeCount){ pendingQuestion = null; renderQA(); }
+    else { pollForAnswer(beforeCount, attempt + 1); }
+  }, attempt === 0 ? 15000 : 13000);
 }
 
 async function forceRebuild(){
