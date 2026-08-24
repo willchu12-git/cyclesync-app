@@ -23,7 +23,7 @@ html,body{margin:0;padding:0}
 body{
   background:var(--bg); color:var(--ink); font:16px/1.55 -apple-system,BlinkMacSystemFont,
   "SF Pro Text","Segoe UI",Roboto,sans-serif; -webkit-font-smoothing:antialiased;
-  padding:max(12px,env(safe-area-inset-top)) 14px calc(40px + env(safe-area-inset-bottom));
+  padding:max(12px,env(safe-area-inset-top)) 14px calc(96px + env(safe-area-inset-bottom));
   max-width:560px; margin:0 auto;
 }
 h1{font-size:19px;margin:0;letter-spacing:.2px}
@@ -36,29 +36,82 @@ button,input,select,textarea{font:inherit;color:inherit}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
   padding:16px;margin-bottom:12px}
 .hero{background:linear-gradient(160deg,#221c2c,#1a1620);text-align:center}
-.ring-wrap{position:relative;width:190px;height:190px;margin:4px auto 6px}
+.ring-wrap{position:relative;width:172px;height:172px;margin:4px auto 6px}
 .ring{transform:rotate(-90deg)}
 .ring-bg{fill:none;stroke:#2c2637;stroke-width:11}
 .ring-fg{fill:none;stroke:url(#g);stroke-width:11;stroke-linecap:round;
   transition:stroke-dasharray .8s ease}
 .ring-mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
   justify-content:center;gap:2px}
-.day-num{font-size:46px;font-weight:650;line-height:1;letter-spacing:-1px}
+.day-num{font-size:42px;font-weight:650;line-height:1;letter-spacing:-1px}
 .day-lbl{font-size:11px;letter-spacing:1.6px;color:var(--faint);text-transform:uppercase}
 .phase{font-size:17px;font-weight:600;color:var(--rose-soft);margin-top:6px}
 .count{font-size:14px;color:var(--dim);margin-top:6px}
 .window{font-size:13px;color:var(--faint);margin-top:4px}
 .chip{display:inline-block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;
   padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--dim)}
-.chip.high{color:var(--green);border-color:#2f5c43}
-.chip.medium{color:var(--amber);border-color:#5c4a2c}
-.chip.low{color:var(--faint)}
-.chip.ok{color:var(--green);border-color:#2f5c43}
-.chip.warn{color:var(--amber);border-color:#5c4a2c}
+.chip.high,.chip.ok{color:var(--green);border-color:#2f5c43}
+.chip.medium,.chip.warn{color:var(--amber);border-color:#5c4a2c}
+.chip.low,.chip.none{color:var(--faint)}
+.iconbtn{background:var(--card2);border:1px solid var(--line);border-radius:12px;width:38px;
+  height:34px;font-size:15px;cursor:pointer;line-height:1}
+.iconbtn:active{opacity:.6}
+.iconbtn.spin{animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* dashboard dials */
+.dials{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.dial{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:11px 12px}
+.dial .k{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--faint)}
+.dial .v{font-size:24px;font-weight:650;margin-top:3px;line-height:1.1}
+.dial .v small{font-size:13px;color:var(--faint);font-weight:400}
+.dial .w{font-size:12.5px;color:var(--dim);margin-top:3px;line-height:1.35}
+.meter{height:5px;border-radius:4px;background:#332c40;margin-top:8px;overflow:hidden}
+.meter span{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#7d3a52,var(--rose))}
+.dial.unknown .v{color:var(--faint);font-size:18px}
+.dial.unknown .meter span{background:#3c3448}
+.basis{font-size:11px;color:var(--faint);margin-top:6px;line-height:1.4}
+.takeaway{font-size:15.5px;line-height:1.5;margin:14px 0 0;color:#ece5f2}
+.tip{margin-top:12px;background:#241b28;border:1px solid #3a2b3f;border-radius:14px;padding:12px}
+.tip .lab{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--rose-soft)}
+.tip .txt{margin-top:5px;font-size:15px;line-height:1.45}
+.tipbtns{display:flex;gap:8px;margin-top:10px}
+.tipbtns button{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:11px;
+  padding:8px 0;font-size:13px;cursor:pointer}
+.tipbtns button.on{border-color:var(--rose);color:var(--rose-soft)}
+
+/* calendar */
+.calhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.calhead .m{font-weight:600}
+.dow{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:5px}
+.dow div{text-align:center;font-size:10.5px;color:var(--faint);letter-spacing:.5px}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cell{aspect-ratio:1;border-radius:11px;background:var(--card2);border:1px solid transparent;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13.5px;
+  cursor:pointer;position:relative;user-select:none;-webkit-tap-highlight-color:transparent}
+.cell.blank{background:transparent;cursor:default}
+.cell.out{color:var(--faint);opacity:.45}
+.cell.period{background:var(--rose);color:#1a1016;font-weight:650}
+.cell.period.approx{background:repeating-linear-gradient(45deg,#e86a8a,#e86a8a 5px,#c25573 5px,#c25573 10px)}
+.cell.pred{border-color:var(--rose);border-style:dashed;color:var(--rose-soft)}
+.cell.fert{box-shadow:inset 0 -3px 0 -1px var(--blue)}
+.cell.today{border-color:var(--ink)}
+.cell.sel{outline:2px solid var(--rose-soft);outline-offset:1px}
+.cell .dot{position:absolute;top:4px;right:5px;width:5px;height:5px;border-radius:50%;
+  background:var(--rose-soft);opacity:.85}
+.cell.period .dot{background:#3a1622}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;font-size:11.5px;color:var(--faint)}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:4px;margin-right:4px;
+  vertical-align:-1px}
+.dayedit{margin-top:14px;border-top:1px solid var(--line);padding-top:13px}
+.dayedit .d{font-weight:600;margin-bottom:9px}
+
 .brief p{color:#e6dfec}
 .brief ul{margin:6px 0 10px;padding-left:18px;color:#e6dfec}
 .brief li{margin:3px 0}
 .src{font-size:11px;color:var(--faint);margin-top:12px}
+.stale{background:#2a2130;border:1px solid #4a3a2a;border-radius:12px;padding:10px 12px;
+  font-size:12.5px;color:var(--amber);margin-bottom:12px;line-height:1.45}
 .row{display:flex;gap:8px;flex-wrap:wrap}
 .row.tight{gap:6px}
 label{display:block;font-size:12px;color:var(--dim);margin:10px 0 5px;letter-spacing:.3px}
@@ -77,7 +130,10 @@ textarea{min-height:74px;resize:vertical}
 .btn{width:100%;background:var(--rose);color:#1a1016;border:none;border-radius:14px;
   padding:14px;font-weight:650;font-size:15px;cursor:pointer;margin-top:14px}
 .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink);font-weight:500}
+.btn.sm{padding:10px;font-size:14px;margin-top:8px}
 .btn:active{opacity:.85}
+.half{display:flex;gap:8px}
+.half .btn{flex:1}
 .check{display:flex;align-items:center;gap:9px;margin-top:10px;font-size:14px;color:var(--dim)}
 .check input{width:20px;height:20px;accent-color:var(--rose)}
 .tl{display:flex;flex-direction:column;gap:9px}
@@ -95,7 +151,7 @@ textarea{min-height:74px;resize:vertical}
 .qa .a{color:#ded7e6;font-size:14px;margin-top:5px;white-space:pre-wrap}
 .qa .when{font-size:11px;color:var(--faint);margin-top:4px}
 .note{font-size:12px;color:var(--faint);margin-top:10px;line-height:1.5}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom));
   background:#2b2436;border:1px solid var(--line);border-radius:12px;padding:11px 16px;font-size:14px;
   opacity:0;pointer-events:none;transition:opacity .25s;max-width:90vw;text-align:center;z-index:9}
 .toast.show{opacity:1}
@@ -104,6 +160,14 @@ details summary::-webkit-details-marker{display:none}
 details[open] summary{margin-bottom:10px}
 .foot{color:var(--faint);font-size:11.5px;line-height:1.6;text-align:center;margin:18px 4px 0}
 .hide{display:none}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:8;background:rgba(18,16,22,.94);
+  backdrop-filter:blur(12px);border-top:1px solid var(--line);
+  padding:7px 0 calc(7px + env(safe-area-inset-bottom));display:flex}
+nav button{flex:1;background:none;border:none;color:var(--faint);font-size:10.5px;
+  letter-spacing:.4px;cursor:pointer;padding:3px 0;display:flex;flex-direction:column;
+  align-items:center;gap:3px}
+nav button .ic{font-size:19px;line-height:1}
+nav button.on{color:var(--rose-soft)}
 </style>
 </head>
 <body>
@@ -113,95 +177,156 @@ details[open] summary{margin-bottom:10px}
     <h1>CycleSync</h1>
     <div class="sub" id="today">--</div>
   </div>
-  <span class="chip" id="sync">loading</span>
+  <div class="row tight" style="align-items:center">
+    <span class="chip" id="sync">loading</span>
+    <button class="iconbtn" id="hrefresh" title="Refresh">&#8635;</button>
+  </div>
 </div>
 
-<div class="card hero" id="hero">
-  <div class="ring-wrap">
-    <svg class="ring" width="190" height="190" viewBox="0 0 190 190">
-      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#7d3a52"/><stop offset="100%" stop-color="#f2a3b8"/>
-      </linearGradient></defs>
-      <circle class="ring-bg" cx="95" cy="95" r="80"/>
-      <circle class="ring-fg" id="ringfg" cx="95" cy="95" r="80" stroke-dasharray="0 502"/>
-    </svg>
-    <div class="ring-mid">
-      <div class="day-num" id="cday">--</div>
-      <div class="day-lbl">cycle day</div>
+<!-- ------------------------------------------------------------- TODAY -->
+<section id="tab-today">
+
+  <div class="card">
+    <h2>Today at a glance</h2>
+    <div class="dials" id="dials"></div>
+    <div class="basis" id="grounding"></div>
+    <p class="takeaway" id="takeaway">--</p>
+    <div class="tip" id="tipbox">
+      <div class="lab">One thing that would help today</div>
+      <div class="txt" id="tiptxt">--</div>
+      <div class="tipbtns">
+        <button id="tip_up">&#128077; This worked</button>
+        <button id="tip_down">&#128078; Missed</button>
+      </div>
+      <div id="tipwhy" class="hide">
+        <input type="text" id="tipnote" placeholder="what happened? (optional, teaches the app)">
+        <button class="btn sm" id="tipsave">Save feedback</button>
+      </div>
     </div>
   </div>
-  <div class="phase" id="phase">no data yet</div>
-  <div class="count" id="count">Log a period start to begin</div>
-  <div class="window" id="window"></div>
-  <div style="margin-top:10px"><span class="chip" id="conf"></span></div>
-</div>
 
-<div id="briefing"></div>
-
-<div class="card">
-  <h2>Log a period</h2>
-  <label>First day of bleeding</label>
-  <input type="date" id="p_start">
-  <div class="check"><input type="checkbox" id="p_start_approx"><span>I'm not sure of the exact day</span></div>
-  <label>Last day (leave blank if it's still going or I don't know)</label>
-  <input type="date" id="p_end">
-  <div class="check"><input type="checkbox" id="p_end_approx"><span>End date is a guess</span></div>
-  <label>Note (optional)</label>
-  <input type="text" id="p_note" placeholder="heavier than usual, etc.">
-  <button class="btn" id="p_save">Save period</button>
-</div>
-
-<div class="card">
-  <h2>What I observed today</h2>
-  <div class="sub" id="obs_when">Only fill in what I actually saw — blanks stay blank.</div>
-  <label>Her energy</label>
-  <div class="scale" data-scale="energy">
-    <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button>
-    <button data-v="4">4</button><button data-v="5">5</button>
+  <div class="card hero" id="hero">
+    <div class="ring-wrap">
+      <svg class="ring" width="172" height="172" viewBox="0 0 190 190">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#7d3a52"/><stop offset="100%" stop-color="#f2a3b8"/>
+        </linearGradient></defs>
+        <circle class="ring-bg" cx="95" cy="95" r="80"/>
+        <circle class="ring-fg" id="ringfg" cx="95" cy="95" r="80" stroke-dasharray="0 502"/>
+      </svg>
+      <div class="ring-mid">
+        <div class="day-num" id="cday">--</div>
+        <div class="day-lbl">cycle day</div>
+      </div>
+    </div>
+    <div class="phase" id="phase">no data yet</div>
+    <div class="count" id="count">Mark her period days in the calendar</div>
+    <div class="window" id="window"></div>
+    <div style="margin-top:10px"><span class="chip" id="conf"></span></div>
+    <button class="btn ghost sm" id="period_today">She started her period today</button>
   </div>
-  <label>Her mood</label>
-  <div class="scale" data-scale="mood">
-    <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button>
-    <button data-v="4">4</button><button data-v="5">5</button>
-  </div>
-  <label>Symptoms she mentioned or I noticed</label>
-  <div class="row tight" id="syms"></div>
-  <input type="text" id="sym_other" placeholder="something else (comma separated)" style="margin-top:8px">
-  <details style="margin-top:14px">
-    <summary>Only if she expressed it — interest in intimacy / working out</summary>
-    <label>Interest in intimacy she expressed (leave blank unless she actually said or showed it)</label>
-    <div class="scale" data-scale="intimacy_interest">
+
+  <div id="briefing"></div>
+
+  <div class="card">
+    <h2>What I observed</h2>
+    <div class="sub" id="obs_when">Only fill in what I actually saw — blanks stay blank.</div>
+    <label>Day</label>
+    <input type="date" id="l_date">
+    <label>Her energy</label>
+    <div class="scale" data-scale="energy">
       <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button>
       <button data-v="4">4</button><button data-v="5">5</button>
     </div>
-    <label>Interest in working out</label>
-    <div class="scale" data-scale="workout_interest">
+    <label>Her mood</label>
+    <div class="scale" data-scale="mood">
       <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button>
       <button data-v="4">4</button><button data-v="5">5</button>
     </div>
-    <div class="note">These are observations, never predictions. Tap a selected number again to clear it.</div>
-  </details>
-  <label>Notes about her day</label>
-  <textarea id="l_note" placeholder="what she said, how the evening went, anything worth remembering"></textarea>
-  <button class="btn" id="l_save">Save today's log</button>
-</div>
+    <label>Symptoms she mentioned or I noticed</label>
+    <div class="row tight" id="syms"></div>
+    <input type="text" id="sym_other" placeholder="something else (comma separated)" style="margin-top:8px">
+    <details style="margin-top:14px">
+      <summary>Only if she expressed it — interest in intimacy / working out</summary>
+      <label>Interest in intimacy she expressed (leave blank unless she actually said or showed it)</label>
+      <div class="scale" data-scale="intimacy_interest">
+        <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button>
+        <button data-v="4">4</button><button data-v="5">5</button>
+      </div>
+      <label>Interest in working out</label>
+      <div class="scale" data-scale="workout_interest">
+        <button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button>
+        <button data-v="4">4</button><button data-v="5">5</button>
+      </div>
+      <div class="note">These are observations, never predictions. Tap a selected number again to clear it.</div>
+    </details>
+    <label>Notes about her day</label>
+    <textarea id="l_note" placeholder="what she said, how the evening went, anything worth remembering"></textarea>
+    <button class="btn" id="l_save">Save observations</button>
+  </div>
+</section>
 
-<div class="card">
-  <h2>Cycles — predicted vs actual</h2>
-  <div class="tl" id="timeline"></div>
-  <div class="note" id="acc"></div>
-</div>
+<!-- ---------------------------------------------------------- CALENDAR -->
+<section id="tab-cal" class="hide">
+  <div class="card">
+    <div class="calhead">
+      <button class="iconbtn" id="prevm">&#8249;</button>
+      <div class="m" id="calmon">--</div>
+      <button class="iconbtn" id="nextm">&#8250;</button>
+    </div>
+    <div class="dow"><div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div></div>
+    <div class="grid" id="calgrid"></div>
+    <div class="legend">
+      <span><i style="background:var(--rose)"></i>period logged</span>
+      <span><i style="border:1px dashed var(--rose)"></i>predicted</span>
+      <span><i style="box-shadow:inset 0 -3px 0 -1px var(--blue);background:var(--card2)"></i>fertile est.</span>
+      <span><i style="background:var(--rose-soft);border-radius:50%;width:7px;height:7px"></i>observation</span>
+    </div>
+    <div class="dayedit" id="dayedit">
+      <div class="d" id="dayedit_d">Tap any day to mark it</div>
+      <div class="half">
+        <button class="btn sm" id="mark_yes">On her period</button>
+        <button class="btn ghost sm" id="mark_no">Not on her period</button>
+      </div>
+      <div class="check"><input type="checkbox" id="mark_approx"><span>I'm not sure of the exact day</span></div>
+      <button class="btn ghost sm" id="mark_log">Log observations for this day</button>
+      <div class="note" id="dayinfo"></div>
+    </div>
+  </div>
 
-<div class="card">
-  <h2>Ask about her cycle</h2>
-  <textarea id="q" placeholder="e.g. is it normal for her to be this tired mid-cycle?"></textarea>
-  <button class="btn" id="q_send">Ask</button>
-  <div id="qa" style="margin-top:16px"></div>
-</div>
+  <div class="card">
+    <h2>Cycles — predicted vs actual</h2>
+    <div class="tl" id="timeline"></div>
+    <div class="note" id="acc"></div>
+  </div>
+</section>
 
-<div class="card">
-  <details id="settings_wrap">
-    <summary>Settings &amp; connection</summary>
+<!-- --------------------------------------------------------------- ASK -->
+<section id="tab-ask" class="hide">
+  <div class="card">
+    <h2>Ask about her cycle</h2>
+    <textarea id="q" placeholder="e.g. is it normal for her to be this tired mid-cycle?   (start with note: to teach instead of ask)"></textarea>
+    <button class="btn" id="q_send">Ask</button>
+    <div id="qa" style="margin-top:16px"></div>
+  </div>
+  <div class="card">
+    <h2>Teach the app about her</h2>
+    <div class="sub">Anything you notice about what helps and what doesn't. This shapes the daily
+      tip and the suggestions — it is the only thing that makes them hers rather than generic.</div>
+    <textarea id="fb" placeholder="e.g. she'd rather be sat with than asked what's wrong"></textarea>
+    <div class="half">
+      <button class="btn sm" id="fb_worked">This works for her</button>
+      <button class="btn ghost sm" id="fb_missed">This doesn't</button>
+    </div>
+    <button class="btn ghost sm" id="fb_note">Just a note</button>
+    <div id="fblist" style="margin-top:14px"></div>
+  </div>
+</section>
+
+<!-- ---------------------------------------------------------- SETTINGS -->
+<section id="tab-set" class="hide">
+  <div class="card">
+    <h2>Settings &amp; connection</h2>
     <label>Private data repo (owner/name)</label>
     <input type="text" id="s_repo" placeholder="yourname/cyclesync-data" autocapitalize="off" autocorrect="off">
     <label>GitHub token (fine-grained, Contents: read &amp; write on that repo)</label>
@@ -209,19 +334,33 @@ details[open] summary{margin-bottom:10px}
     <div class="note">Stored only in this browser's local storage on this device. It never leaves
       your phone except in requests to github.com. Nothing personal is ever stored in the public app repo.</div>
     <button class="btn" id="s_save">Save &amp; sync</button>
-    <button class="btn ghost" id="s_refresh">Refresh now</button>
+    <button class="btn ghost" id="s_refresh">Refresh from cloud</button>
+    <button class="btn ghost" id="s_rebuild">Force a cloud rebuild</button>
     <div class="note" id="s_status"></div>
-  </details>
-</div>
+  </div>
+  <div class="card">
+    <h2>This device</h2>
+    <div class="note" id="s_queue"></div>
+    <div class="note" id="s_built"></div>
+  </div>
+</section>
 
 <div class="foot" id="foot"></div>
 <div class="toast" id="toast"></div>
 
+<nav>
+  <button data-tab="today" class="on"><span class="ic">&#9728;</span>Today</button>
+  <button data-tab="cal"><span class="ic">&#128197;</span>Calendar</button>
+  <button data-tab="ask"><span class="ic">&#128172;</span>Ask</button>
+  <button data-tab="set"><span class="ic">&#9881;</span>Settings</button>
+</nav>
+
 <script>
 const EMBED = null;
 const DEFAULT_REPO = "willchu12-git/cyclesync-data";
-const BUILT = "2026-08-23 20:26";
+const BUILT = "2026-08-24 05:45";
 const LOCAL_API = "http://127.0.0.1:8777";
+const GENERIC = {"menstrual": {"energy": 2.2, "mood": 2.6, "workout_interest": 2.0}, "follicular": {"energy": 3.8, "mood": 3.8, "workout_interest": 3.8}, "ovulatory / fertile": {"energy": 4.2, "mood": 4.0, "workout_interest": 4.2}, "early luteal": {"energy": 3.3, "mood": 3.3, "workout_interest": 3.2}, "late luteal / premenstrual": {"energy": 2.5, "mood": 2.5, "workout_interest": 2.4}, "period expected / overdue": {"energy": 2.6, "mood": 2.6, "workout_interest": 2.5}};          /* kept in step with engine/scores.py at build time */
 
 const $ = function(id){ return document.getElementById(id); };
 const ls = {
@@ -230,7 +369,8 @@ const ls = {
   set: function(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
 };
 
-let STATE = null, BRIEF = null, QA = [];
+let STATE = null, BRIEF = null, QA = [], LIVE = null;
+let calCursor = null, selDay = null, tipVerdict = null;
 const picked = {energy:null, mood:null, intimacy_interest:null, workout_interest:null};
 let chosenSyms = [];
 
@@ -242,38 +382,304 @@ function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c
   return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
 function fmt(iso){
   if(!iso) return "--";
-  const d = new Date(iso + "T12:00:00");
-  return d.toLocaleDateString(undefined, {month:"short", day:"numeric"});
+  return new Date(iso + "T12:00:00").toLocaleDateString(undefined, {month:"short", day:"numeric"});
 }
 function today(){ return new Date().toLocaleDateString("en-CA"); }
+function dnum(iso){ return Math.floor(new Date(iso + "T12:00:00").getTime() / 86400000); }
+function diso(n){ return new Date(n * 86400000 + 43200000).toLocaleDateString("en-CA"); }
+function addDays(iso, n){ return diso(dnum(iso) + n); }
+function daysBetween(a, b){ return dnum(b) - dnum(a); }
+
+/* ============================================================ THE MIRROR
+   A JavaScript twin of engine/cycle.py + engine/scores.py, so marking a day
+   updates every number on screen instantly instead of a minute later. The
+   cloud recomputes the same thing and its answer overwrites this one.
+   ==================================================================== */
+const MIN_GAP = 18, MAX_GAP = 45, RECENT_N = 6, K_BLEND = 3;
+
+function median(xs){
+  const a = xs.slice().sort(function(x,y){ return x-y; });
+  if(!a.length) return null;
+  const m = Math.floor(a.length/2);
+  return a.length % 2 ? a[m] : (a[m-1]+a[m])/2;
+}
+function weightedMedian(vals, weights){
+  const pairs = vals.map(function(v,i){ return [v, weights[i]]; })
+                    .sort(function(a,b){ return a[0]-b[0]; });
+  const half = weights.reduce(function(s,w){ return s+w; }, 0) / 2;
+  let acc = 0;
+  for(const p of pairs){ acc += p[1]; if(acc >= half) return p[0]; }
+  return pairs[pairs.length-1][0];
+}
+
+/* runs of marked days -> {start,end} cycles  (mirrors store.derive_cycles) */
+function deriveCycles(periodDays, todayIso){
+  const marks = {}, no = {};
+  (periodDays || []).forEach(function(r){
+    if(!r || !r.date) return;
+    if(r.period){ marks[r.date] = r; delete no[r.date]; }
+    else { no[r.date] = true; delete marks[r.date]; }
+  });
+  const days = Object.keys(marks).sort();
+  if(!days.length) return [];
+  const runs = [];
+  let run = [days[0]];
+  for(let i = 1; i < days.length; i++){
+    const gap = daysBetween(days[i-1], days[i]);
+    let bridged = true;
+    for(let k = 1; k < gap; k++){ if(no[addDays(days[i-1], k)]) bridged = false; }
+    if(gap === 1 || (gap <= 2 && bridged)) run.push(days[i]);
+    else { runs.push(run); run = [days[i]]; }
+  }
+  runs.push(run);
+  return runs.map(function(r){
+    const start = r[0], end = r[r.length-1];
+    return {start: start, end: (end >= todayIso ? null : end),
+            start_approx: !!(marks[start] || {}).approx,
+            end_approx: !!(marks[end] || {}).approx, days_marked: r.length};
+  });
+}
+
+function typical(starts, cfg){
+  const gaps = [];
+  for(let i = 1; i < starts.length; i++) gaps.push(daysBetween(starts[i-1], starts[i]));
+  const lens = gaps.filter(function(g){ return g >= MIN_GAP && g <= MAX_GAP; });
+  const recent = lens.slice(-RECENT_N);
+  if(recent.length >= 2){
+    const w = recent.map(function(_, i){ return Math.pow(1.6, i); });
+    const m = median(recent);
+    const mad = median(recent.map(function(x){ return Math.abs(x - m); })) || 1;
+    return [Math.round(weightedMedian(recent, w)), Math.max(1, Math.round(1.4826 * mad)),
+            recent.length];
+  }
+  return [cfg.cycle_length, 4, recent.length];
+}
+
+function periodLength(cycles, def){
+  const lens = [];
+  cycles.forEach(function(c){
+    if(c.start && c.end){
+      const n = daysBetween(c.start, c.end) + 1;
+      if(n >= 2 && n <= 10) lens.push(n);
+    }
+  });
+  return lens.length ? Math.round(median(lens)) : def;
+}
+
+function estimate(cycles, todayIso, cfg){
+  const valid = (cycles || []).filter(function(c){ return c.start; })
+                              .sort(function(a,b){ return a.start < b.start ? -1 : 1; });
+  if(!valid.length) return {status:"no_data"};
+  const starts = valid.map(function(c){ return c.start; });
+  const last = starts[starts.length-1];
+  const t = typical(starts, cfg), typ = t[0], variability = t[1], nUsed = t[2];
+  const fuzz = valid[valid.length-1].start_approx ? 2 : 0;
+  const plen = periodLength(valid, cfg.period_length);
+  const predicted = addDays(last, typ);
+  const half = Math.max(1, Math.round(1.5*variability) + fuzz + (nUsed < 3 ? 3 : 0));
+  const win = [addDays(predicted, -half), addDays(predicted, half)];
+  const ovulation = addDays(predicted, -cfg.luteal_length);
+  const fertile = [addDays(ovulation, -5), addDays(ovulation, 1)];
+  const periodEnd = addDays(last, plen - 1);
+  const premens = addDays(predicted, -5);
+  let phase;
+  if(todayIso >= win[1]) phase = "period expected / overdue";
+  else if(todayIso <= periodEnd) phase = "menstrual";
+  else if(todayIso < fertile[0]) phase = "follicular";
+  else if(todayIso <= fertile[1]) phase = "ovulatory / fertile";
+  else if(todayIso < premens) phase = "early luteal";
+  else phase = "late luteal / premenstrual";
+  let confidence;
+  if(nUsed >= 4 && variability <= 3 && !fuzz) confidence = "high";
+  else if(nUsed < 2 || variability >= 7 || fuzz >= 2) confidence = "low";
+  else confidence = "medium";
+  return {status:"ok", today:todayIso, last_period_start:last,
+          cycle_day: daysBetween(last, todayIso) + 1, phase:phase, confidence:confidence,
+          typical_cycle_length:typ, cycle_length_variability_days:variability,
+          typical_period_length:plen, cycles_used:nUsed, predicted_next_period:predicted,
+          predicted_window:win, days_until_next_period: daysBetween(todayIso, predicted),
+          estimated_ovulation:ovulation, fertile_window:fertile};
+}
+
+/* which phase a PAST day fell in -- uses the real next start when we have it */
+function phaseAt(iso, cycles, cfg){
+  const valid = (cycles || []).filter(function(c){ return c.start; })
+                              .sort(function(a,b){ return a.start < b.start ? -1 : 1; });
+  const prior = valid.filter(function(c){ return c.start <= iso; });
+  if(!prior.length) return null;
+  const c = prior[prior.length-1];
+  const later = valid.filter(function(x){ return x.start > c.start; });
+  const starts = valid.map(function(x){ return x.start; });
+  let span = typical(starts, cfg)[0];
+  if(later.length){
+    const real = daysBetween(c.start, later[0].start);
+    if(real >= MIN_GAP && real <= MAX_GAP) span = real;
+  }
+  let plen = periodLength(valid, cfg.period_length);
+  if(c.end){
+    const n = daysBetween(c.start, c.end) + 1;
+    if(n >= 2 && n <= 10) plen = n;
+  }
+  const next = addDays(c.start, span);
+  const ov = addDays(next, -cfg.luteal_length);
+  const f0 = addDays(ov, -5), f1 = addDays(ov, 1);
+  const pEnd = addDays(c.start, plen - 1), pre = addDays(next, -5);
+  let phase;
+  if(iso > addDays(next, 1)) phase = "period expected / overdue";
+  else if(iso <= pEnd) phase = "menstrual";
+  else if(iso < f0) phase = "follicular";
+  else if(iso <= f1) phase = "ovulatory / fertile";
+  else if(iso < pre) phase = "early luteal";
+  else phase = "late luteal / premenstrual";
+  return phase;
+}
+
+/* her logged averages per phase (mirrors personalize.summary, trimmed) */
+function perPhase(logs, cycles, cfg){
+  const out = {};
+  (logs || []).forEach(function(l){
+    if(!l || !l.date) return;
+    const ph = phaseAt(l.date, cycles, cfg);
+    if(!ph) return;
+    const e = out[ph] || (out[ph] = {n_logs:0, energy:[], mood:[],
+                                     intimacy_interest:[], workout_interest:[], symptoms:{}});
+    e.n_logs++;
+    ["energy","mood","intimacy_interest","workout_interest"].forEach(function(f){
+      if(l[f] != null) e[f].push(l[f]);
+    });
+    (l.symptoms || []).forEach(function(s){ e.symptoms[s] = (e.symptoms[s] || 0) + 1; });
+  });
+  return out;
+}
+
+const DIALS = [["energy","energy","Energy"], ["mood","mood","Mood"],
+               ["libido","intimacy_interest","Libido"], ["workout","workout_interest","Movement"]];
+const WORDS = {
+  energy:[[1.8,"likely very low"],[2.5,"likely low"],[3.4,"probably moderate"],
+          [4.2,"likely good"],[99,"likely high"]],
+  mood:[[1.8,"may be having a hard day"],[2.5,"may be tender or short"],[3.4,"probably steady"],
+        [4.2,"likely upbeat"],[99,"likely bright"]],
+  libido:[[1.8,"she has expressed little"],[2.5,"she has expressed some"],[3.4,"mixed in your logs"],
+          [4.2,"she has expressed interest"],[99,"she has expressed a lot"]],
+  workout:[[1.8,"rest is likely what helps"],[2.5,"gentle movement at most"],[3.4,"a walk may appeal"],
+           [4.2,"likely up for a session"],[99,"likely up for something hard"]]
+};
+function wordFor(key, v){
+  const rows = WORDS[key];
+  for(const r of rows){ if(v < r[0]) return r[1]; }
+  return rows[rows.length-1][1];
+}
+
+function dials(est, phases){
+  const phase = est && est.phase;
+  const entry = phases[phase] || null;
+  const conf = est && est.confidence;
+  return DIALS.map(function(d){
+    const key = d[0], field = d[1], label = d[2];
+    const vals = entry ? (entry[field] || []) : [];
+    const n = vals.length;
+    const mean = n ? vals.reduce(function(a,b){ return a+b; }, 0) / n : null;
+    let generic = (GENERIC[phase] || {})[field];
+    if(key === "libido") generic = undefined;      /* never guessed -- see scores.py */
+    let value = null, basis = "", confidence = "none";
+    if(mean != null){
+      const w = n / (n + K_BLEND);
+      value = (generic !== undefined) ? (w*mean + (1-w)*generic) : mean;
+      basis = w >= 0.5 ? ("her logs (" + n + " day" + (n===1?"":"s") + " in this phase)")
+                       : ("mostly the generic pattern — only " + n + " log" + (n===1?"":"s") + " here");
+      confidence = n >= 5 ? "high" : (n >= 2 ? "medium" : "low");
+    } else if(generic !== undefined){
+      value = generic; basis = "generic phase pattern — nothing logged yet"; confidence = "low";
+    } else {
+      return {key:key, label:label, value:null, word:"nothing logged yet",
+              basis:"only what you observe fills this in", confidence:"none", n:0};
+    }
+    if(conf === "low" && confidence === "high") confidence = "medium";
+    value = Math.round(Math.min(5, Math.max(1, value)) * 10) / 10;
+    return {key:key, label:label, value:value, pct: Math.round((value-1)/4*100),
+            word: wordFor(key, value), basis:basis, confidence:confidence, n:n};
+  });
+}
+
+/* the whole local recompute, from raw marks to what's on screen */
+function recompute(){
+  const cfg = (STATE && STATE.config && STATE.config.cycle) ||
+              {cycle_length:28, period_length:5, luteal_length:14};
+  const raw = (STATE && STATE.raw) || {period_days:[], logs:[]};
+  const days = mergePending(raw.period_days || [], pendingDays());
+  const logs = mergePendingLogs(raw.logs || [], pendingLogs());
+  const cycles = deriveCycles(days, today());
+  const est = estimate(cycles, today(), cfg);
+  const phases = perPhase(logs, cycles, cfg);
+  return {estimate: est, cycles: cycles, days: days, logs: logs, phases: phases,
+          dials: dials(est, phases),
+          marks: days.filter(function(d){ return d.period; })
+                     .reduce(function(m, d){ m[d.date] = d; return m; }, {})};
+}
+
+/* local edits that the cloud hasn't confirmed yet */
+function pendingDays(){ return ls.get("cs_pending_days", {}); }
+function pendingLogs(){ return ls.get("cs_pending_logs", {}); }
+function mergePending(serverDays, pend){
+  const out = serverDays.slice();
+  Object.keys(pend).forEach(function(d){ out.push(pend[d]); });
+  return out;
+}
+function mergePendingLogs(serverLogs, pend){
+  const by = {};
+  serverLogs.forEach(function(l){ if(l && l.date) by[l.date] = l; });
+  Object.keys(pend).forEach(function(d){ by[d] = Object.assign({}, by[d] || {}, pend[d]); });
+  return Object.keys(by).sort().map(function(d){ return by[d]; });
+}
+function notePending(kind, date, rec){
+  const key = kind === "day" ? "cs_pending_days" : "cs_pending_logs";
+  const p = ls.get(key, {});
+  p[date] = rec;
+  ls.set(key, p);
+}
+function clearConfirmedPending(){
+  /* once the server's copy says the same thing, the local note is redundant */
+  const raw = (STATE && STATE.raw) || {};
+  const sd = {};
+  (raw.period_days || []).forEach(function(r){ sd[r.date] = r; });
+  const pd = pendingDays(), keepD = {};
+  Object.keys(pd).forEach(function(d){
+    if(!sd[d] || !!sd[d].period !== !!pd[d].period) keepD[d] = pd[d];
+  });
+  ls.set("cs_pending_days", keepD);
+  const sl = {};
+  (raw.logs || []).forEach(function(r){ sl[r.date] = r; });
+  const pl = pendingLogs(), keepL = {};
+  Object.keys(pl).forEach(function(d){ if(!sl[d]) keepL[d] = pl[d]; });
+  ls.set("cs_pending_logs", keepL);
+}
 
 /* ---------------------------------------------------------------- github */
-function cfg(){ return { repo: ls.get("cs_repo", DEFAULT_REPO) || "", token: ls.get("cs_token", "") || "" }; }
-function connected(){ const c = cfg(); return !!(c.repo && c.repo.indexOf("/") > 0 && c.token); }
+function cfgApp(){ return {repo: ls.get("cs_repo", DEFAULT_REPO) || "", token: ls.get("cs_token", "") || ""}; }
+function connected(){ const c = cfgApp(); return !!(c.repo && c.repo.indexOf("/") > 0 && c.token); }
 
 async function ghGet(path){
-  const c = cfg();
+  const c = cfgApp();
   const r = await fetch("https://api.github.com/repos/" + c.repo + "/contents/" + path +
                         "?ref=HEAD&t=" + Date.now(),
-    { headers: { Authorization: "Bearer " + c.token, Accept: "application/vnd.github.raw" } });
+    {headers: {Authorization: "Bearer " + c.token, Accept: "application/vnd.github.raw"}});
   if(r.status === 404) return null;
   if(!r.ok) throw new Error("GitHub " + r.status + " on " + path);
   return await r.text();
 }
 async function ghPut(path, text, message){
-  const c = cfg();
-  const body = { message: message, content: btoa(unescape(encodeURIComponent(text))) };
+  const c = cfgApp();
+  const body = {message: message, content: btoa(unescape(encodeURIComponent(text)))};
   const r = await fetch("https://api.github.com/repos/" + c.repo + "/contents/" + path, {
-    method: "PUT",
-    headers: { Authorization: "Bearer " + c.token, Accept: "application/vnd.github+json",
-               "Content-Type": "application/json" },
+    method:"PUT",
+    headers:{Authorization:"Bearer " + c.token, Accept:"application/vnd.github+json",
+             "Content-Type":"application/json"},
     body: JSON.stringify(body)
   });
   if(!r.ok) throw new Error("GitHub " + r.status + ": " + (await r.text()).slice(0,140));
   return await r.json();
 }
 
-/* offline queue: nothing typed on a train is ever lost */
 function queue(item){ const q = ls.get("cs_queue", []); q.push(item); ls.set("cs_queue", q); }
 async function flush(){
   let q = ls.get("cs_queue", []);
@@ -287,11 +693,10 @@ async function flush(){
   if(q.length && !left.length) toast("Synced " + q.length + " pending item(s)");
   return left.length;
 }
-
 function stamp(){ return new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19); }
 
 async function send(path, text, message, okMsg){
-  if(EMBED){                                    // local build: talk to engine/serve.py if it's up
+  if(EMBED){                                    /* local build: talk to engine/serve.py if it's up */
     try {
       const r = await fetch(LOCAL_API + "/api/write", {
         method:"POST", headers:{"Content-Type":"application/json"},
@@ -305,32 +710,26 @@ async function send(path, text, message, okMsg){
     toast("Saved on this device — add a token in Settings to sync");
     return false;
   }
-  try {
-    await ghPut(path, text, message);
-    toast(okMsg);
-    return true;
-  } catch(e){
-    queue({path:path, text:text, message:message});
-    toast("Offline — queued, will sync later");
-    return false;
-  }
+  try { await ghPut(path, text, message); toast(okMsg); return true; }
+  catch(e){ queue({path:path, text:text, message:message}); toast("Offline — queued, will sync later"); return false; }
 }
 
 /* ----------------------------------------------------------------- load */
-async function load(){
+async function load(quiet){
   if(EMBED){
     STATE = EMBED.state; BRIEF = EMBED.briefing; QA = EMBED.qa || [];
     $("sync").textContent = "local"; $("sync").className = "chip ok";
     render(); return;
   }
   const cached = ls.get("cs_cache", null);
-  if(cached){ STATE = cached.state; BRIEF = cached.briefing; QA = cached.qa || []; render(); }
+  if(cached && !STATE){ STATE = cached.state; BRIEF = cached.briefing; QA = cached.qa || []; render(); }
   if(!connected()){
     $("sync").textContent = "not connected"; $("sync").className = "chip warn";
-    if(!cached){ $("settings_wrap").open = true; }
-    return;
+    if(!cached) showTab("set");
+    render(); return;
   }
-  $("sync").textContent = "syncing"; $("sync").className = "chip";
+  if(!quiet){ $("sync").textContent = "syncing"; $("sync").className = "chip"; }
+  $("hrefresh").classList.add("spin");
   try {
     const [s, b, q] = await Promise.all([
       ghGet("data/store/state.json"),
@@ -343,12 +742,14 @@ async function load(){
           .map(function(x){ try { return JSON.parse(x); } catch(e){ return null; } })
           .filter(Boolean);
     ls.set("cs_cache", {state:STATE, briefing:BRIEF, qa:QA.slice(-12)});
+    clearConfirmedPending();
     $("sync").textContent = "synced"; $("sync").className = "chip ok";
     render();
   } catch(e){
     $("sync").textContent = "sync failed"; $("sync").className = "chip warn";
     $("s_status").textContent = String(e.message || e);
   }
+  $("hrefresh").classList.remove("spin");
   await flush();
 }
 
@@ -366,24 +767,75 @@ function mdish(text){
 }
 
 function render(){
+  LIVE = recompute();
   $("today").textContent = new Date().toLocaleDateString(undefined,
     {weekday:"long", month:"long", day:"numeric"});
-  renderHero(); renderBrief(); renderTimeline(); renderQA(); renderLoggedToday();
+  renderDash(); renderHero(); renderBrief(); renderCalendar(); renderTimeline();
+  renderQA(); renderFeedback(); renderLoggedToday(); renderDevice();
   $("foot").textContent = (STATE && STATE.disclaimer) ? STATE.disclaimer :
     "Not medical advice. Predictions are estimates from sparse data. Her own words always win.";
-  if(BUILT) $("foot").textContent += "  ·  app built " + BUILT;
+}
+
+function renderDash(){
+  const ds = LIVE.dials;
+  $("dials").innerHTML = ds.map(function(d){
+    const unknown = d.value == null;
+    return '<div class="dial' + (unknown ? " unknown" : "") + '">' +
+      '<div class="k">' + esc(d.label) + "</div>" +
+      '<div class="v">' + (unknown ? "—" : esc(d.value) + ' <small>/5</small>') + "</div>" +
+      '<div class="w">' + esc(d.word) + "</div>" +
+      '<div class="meter"><span style="width:' + (unknown ? 0 : d.pct) + '%"></span></div>' +
+      '<div class="basis">' + esc(d.basis) + '</div></div>';
+  }).join("");
+  const grounded = ds.filter(function(d){ return d.n; }).length;
+  const est = LIVE.estimate;
+  $("grounding").textContent = est.status === "ok"
+    ? (grounded + " of 4 dials are using her own logs · prediction confidence " +
+       (est.confidence || "--") + " · tap Calendar to correct any day")
+    : "Mark her period days in the Calendar tab to start.";
+
+  const fresh = briefMatches();
+  $("takeaway").textContent = (fresh && BRIEF && BRIEF.takeaway) ? BRIEF.takeaway
+    : (STATE && STATE.dashboard && fresh ? STATE.dashboard.takeaway : localTakeaway());
+  $("tiptxt").textContent = (fresh && BRIEF && BRIEF.tip) ? BRIEF.tip
+    : "Ask how her day actually went, and listen without fixing it.";
+}
+
+function localTakeaway(){
+  const e = LIVE.estimate;
+  if(e.status !== "ok") return "Mark her period days in the calendar and this fills in.";
+  const by = {}; LIVE.dials.forEach(function(d){ by[d.key] = d; });
+  let s = "Day " + e.cycle_day + ", " + e.phase + ".";
+  if(by.energy && by.energy.value != null){
+    s += " Expect energy " + wordFor("energy", by.energy.value).replace("likely ", "") +
+         " and mood " + wordFor("mood", by.mood.value).replace("may be ", "").replace("probably ", "") + ".";
+  }
+  return s + " The written briefing updates within a minute or two.";
+}
+
+/* is the stored briefing still about the day we're actually in? */
+function briefMatches(){
+  if(!BRIEF) return false;
+  const b = BRIEF.basis || {};
+  const e = LIVE.estimate;
+  if(BRIEF.date && BRIEF.date !== today()) return false;
+  if(e.status !== "ok") return true;
+  return b.phase === e.phase && b.predicted_next_period === e.predicted_next_period &&
+         b.last_period_start === e.last_period_start;
 }
 
 function renderHero(){
-  const e = STATE && STATE.estimate;
+  const e = LIVE.estimate;
   const C = 2 * Math.PI * 80;
   if(!e || e.status !== "ok"){
     $("ringfg").setAttribute("stroke-dasharray", "0 " + C);
-    $("conf").textContent = ""; return;
+    $("cday").textContent = "--"; $("phase").textContent = "no data yet";
+    $("count").textContent = "Mark her period days in the calendar";
+    $("window").textContent = ""; $("conf").textContent = ""; return;
   }
   const span = e.typical_cycle_length || 28;
   const frac = Math.max(0.02, Math.min(1, e.cycle_day / span));
-  $("ringfg").setAttribute("stroke-dasharray", (C * frac).toFixed(1) + " " + C);
+  $("ringfg").setAttribute("stroke-dasharray", (C*frac).toFixed(1) + " " + C);
   $("cday").textContent = e.cycle_day;
   $("phase").textContent = e.phase;
   const d = e.days_until_next_period;
@@ -396,19 +848,27 @@ function renderHero(){
     e.cycle_length_variability_days + " days";
   $("conf").textContent = e.confidence + " confidence · " + e.cycles_used + " cycles used";
   $("conf").className = "chip " + e.confidence;
+  $("period_today").classList.toggle("hide", !!LIVE.marks[today()]);
 }
 
 function renderBrief(){
   const box = $("briefing");
   const secs = [["overview","Overview"],["show_up","How to show up for her"],
                 ["connection","Connection & intimacy"],["movement","Movement"]];
+  let html = "";
+  if(!briefMatches() && LIVE.estimate.status === "ok"){
+    html += '<div class="stale">The cycle picture changed since this briefing was written' +
+            (BRIEF && BRIEF.date ? " (" + esc(BRIEF.date) + ")" : "") +
+            '. The cloud rewrites it within a minute or two — the dials above are already ' +
+            'up to date. <br><br>' +
+            '<button class="btn ghost sm" onclick="forceRebuild()">Rewrite it now</button></div>';
+  }
   if(!BRIEF){
-    box.innerHTML = '<div class="card"><h2>Today\'s briefing</h2><p class="sub">' +
+    box.innerHTML = html + '<div class="card"><h2>Today\'s briefing</h2><p class="sub">' +
       'No briefing yet. It is written every morning by the daily job — or run ' +
       '<code>py engine/brief.py</code> on the PC.</p></div>';
     return;
   }
-  let html = "";
   if(BRIEF.headline){
     html += '<div class="card brief"><p style="color:var(--rose-soft);font-weight:600;margin:0">' +
             esc(BRIEF.headline) + "</p></div>";
@@ -423,30 +883,107 @@ function renderBrief(){
   box.innerHTML = html;
 }
 
+/* -------------------------------------------------------------- calendar */
+function monthLabel(y, m){
+  return new Date(y, m, 1).toLocaleDateString(undefined, {month:"long", year:"numeric"});
+}
+function renderCalendar(){
+  if(!calCursor){ const t = new Date(); calCursor = {y: t.getFullYear(), m: t.getMonth()}; }
+  const y = calCursor.y, m = calCursor.m;
+  $("calmon").textContent = monthLabel(y, m);
+  const first = new Date(y, m, 1), lead = first.getDay();
+  const days = new Date(y, m+1, 0).getDate();
+  const e = LIVE.estimate;
+  const pred = {}, fert = {};
+  if(e.status === "ok"){
+    for(let d = dnum(e.predicted_window[0]); d <= dnum(e.predicted_window[1]); d++) pred[diso(d)] = 1;
+    for(let d = dnum(e.fertile_window[0]); d <= dnum(e.fertile_window[1]); d++) fert[diso(d)] = 1;
+  }
+  const logged = {};
+  LIVE.logs.forEach(function(l){ if(l && l.date) logged[l.date] = l; });
+
+  let html = "";
+  for(let i = 0; i < lead; i++) html += '<div class="cell blank"></div>';
+  for(let d = 1; d <= days; d++){
+    const iso = y + "-" + String(m+1).padStart(2,"0") + "-" + String(d).padStart(2,"0");
+    const mark = LIVE.marks[iso];
+    const cls = ["cell"];
+    if(mark){ cls.push("period"); if(mark.approx) cls.push("approx"); }
+    else if(pred[iso]) cls.push("pred");
+    if(fert[iso] && !mark) cls.push("fert");
+    if(iso === today()) cls.push("today");
+    if(iso === selDay) cls.push("sel");
+    if(iso > today()) cls.push("out");
+    html += '<div class="' + cls.join(" ") + '" data-d="' + iso + '">' + d +
+            (logged[iso] ? '<span class="dot"></span>' : "") + "</div>";
+  }
+  $("calgrid").innerHTML = html;
+  Array.prototype.forEach.call($("calgrid").querySelectorAll(".cell[data-d]"), function(c){
+    if(c.dataset.d > today()) return;          /* you can't have observed tomorrow */
+    c.addEventListener("click", function(){ selectDay(c.dataset.d); });
+  });
+  if(selDay) showDayEditor(selDay);
+}
+
+function selectDay(iso){
+  selDay = iso;
+  renderCalendar();
+  showDayEditor(iso);
+}
+function showDayEditor(iso){
+  const mark = LIVE.marks[iso];
+  const l = LIVE.logs.filter(function(x){ return x.date === iso; })[0];
+  $("dayedit_d").textContent = new Date(iso + "T12:00:00").toLocaleDateString(undefined,
+    {weekday:"long", month:"long", day:"numeric"});
+  $("mark_approx").checked = !!(mark && mark.approx);
+  const bits = [];
+  bits.push(mark ? "Marked as a period day." : "Not marked as a period day.");
+  const ph = phaseAt(iso, LIVE.cycles, (STATE && STATE.config && STATE.config.cycle) ||
+                     {cycle_length:28, period_length:5, luteal_length:14});
+  if(ph) bits.push("Phase: " + ph + ".");
+  if(l){
+    const o = [];
+    if(l.energy) o.push("energy " + l.energy + "/5");
+    if(l.mood) o.push("mood " + l.mood + "/5");
+    if(l.symptoms && l.symptoms.length) o.push(l.symptoms.join(", "));
+    if(l.note) o.push("note saved");
+    if(o.length) bits.push("Logged: " + o.join(" · ") + ".");
+  }
+  $("dayinfo").textContent = bits.join(" ");
+}
+
+async function markDay(iso, isPeriod){
+  const rec = {kind:"period_day", date:iso, period:isPeriod, approx:$("mark_approx").checked};
+  notePending("day", iso, {date:iso, period:isPeriod, approx:rec.approx});
+  render();                                    /* everything moves immediately */
+  await send("inbox/" + stamp() + "-day.json", JSON.stringify(rec, null, 2),
+             "log: " + (isPeriod ? "period day " : "not a period day ") + iso,
+             isPeriod ? "Marked as a period day" : "Cleared");
+  setTimeout(function(){ load(true); }, 45000);   /* let the workflow catch up, then re-sync */
+}
+
 function renderTimeline(){
   const rows = (STATE && STATE.history) || [];
   const box = $("timeline");
-  if(!rows.length){ box.innerHTML = '<div class="sub">No periods logged yet.</div>'; return; }
+  if(!rows.length){ box.innerHTML = '<div class="sub">No periods marked yet.</div>'; $("acc").textContent = ""; return; }
   const shown = rows.slice(-10).reverse();
-  const maxSpan = 45;
   box.innerHTML = shown.map(function(r){
-    const span = r.actual ? Math.round((new Date(r.actual) - new Date(r.start)) / 86400000) : null;
-    const pct = span ? Math.min(100, (span / maxSpan) * 100) : 12;
+    const span = r.actual ? daysBetween(r.start, r.actual) : null;
+    const pct = span ? Math.min(100, (span/45)*100) : 12;
     let err = "", cls = "err";
     if(r.error_days === null || r.error_days === undefined){
       err = span ? (span + "d") : "current";
     } else {
       const a = Math.abs(r.error_days);
       cls += a <= 2 ? " good" : (a <= 4 ? " mid" : "");
-      err = (r.error_days === 0 ? "spot on" :
-             (r.error_days > 0 ? "+" : "") + r.error_days + "d") + " · " + span + "d";
+      err = (r.error_days === 0 ? "spot on" : (r.error_days > 0 ? "+" : "") + r.error_days + "d") +
+            " · " + span + "d";
     }
     return '<div class="tl-row"><div>' + fmt(r.start) + (r.start_approx ? " ~" : "") +
            '</div><div class="bar"><span style="width:' + pct.toFixed(0) + '%"></span></div>' +
            '<div class="' + cls + '">' + err + "</div></div>";
   }).join("");
-  const a = (STATE && STATE.accuracy) || {};
-  $("acc").textContent = a.note || "";
+  $("acc").textContent = ((STATE && STATE.accuracy) || {}).note || "";
 }
 
 function renderQA(){
@@ -459,15 +996,41 @@ function renderQA(){
   }).join("");
 }
 
+function renderFeedback(){
+  const p = (STATE && STATE.preferences) || {};
+  const box = $("fblist");
+  const likes = (p.likes || []), avoid = (p.avoid || []);
+  if(!likes.length && !avoid.length && !(p.total_feedback)){
+    box.innerHTML = '<div class="sub">Nothing taught yet. Anything you add here shows up in ' +
+                    'tomorrow\'s tip.</div>';
+    return;
+  }
+  let h = "";
+  if(p.summary) h += '<p class="sub">' + esc(p.summary) + "</p>";
+  if(likes.length) h += "<p><b>Works:</b> " + likes.map(esc).join(" · ") + "</p>";
+  if(avoid.length) h += "<p><b>Avoid:</b> " + avoid.map(esc).join(" · ") + "</p>";
+  h += '<div class="note">' + (p.total_feedback || 0) + " piece(s) of feedback on record.</div>";
+  box.innerHTML = h;
+}
+
 function renderLoggedToday(){
-  const l = STATE && STATE.logged_today;
+  const l = LIVE.logs.filter(function(x){ return x.date === ($("l_date").value || today()); })[0];
   if(!l){ $("obs_when").textContent = "Only fill in what I actually saw — blanks stay blank."; return; }
   const bits = [];
   if(l.energy) bits.push("energy " + l.energy + "/5");
   if(l.mood) bits.push("mood " + l.mood + "/5");
   if(l.symptoms && l.symptoms.length) bits.push(l.symptoms.join(", "));
-  $("obs_when").textContent = "Already logged today: " + (bits.join(" · ") || "a note") +
+  $("obs_when").textContent = "Already logged for that day: " + (bits.join(" · ") || "a note") +
     ". Saving again updates it.";
+}
+
+function renderDevice(){
+  const q = ls.get("cs_queue", []).length;
+  const pd = Object.keys(pendingDays()).length + Object.keys(pendingLogs()).length;
+  $("s_queue").textContent = q ? (q + " item(s) waiting to sync — they go up as soon as you're online.")
+    : (pd ? pd + " local edit(s) not yet confirmed by the cloud." : "Everything is synced.");
+  $("s_built").textContent = "App build " + BUILT + (STATE && STATE.generated_at ?
+    " · data generated " + STATE.generated_at : "");
 }
 
 /* ------------------------------------------------------------- controls */
@@ -493,7 +1056,7 @@ function buildScales(){
     Array.prototype.forEach.call(sc.querySelectorAll("button"), function(b){
       b.addEventListener("click", function(){
         const v = Number(b.dataset.v);
-        const clearing = picked[field] === v;             // tap again to clear
+        const clearing = picked[field] === v;             /* tap again to clear */
         picked[field] = clearing ? null : v;
         Array.prototype.forEach.call(sc.querySelectorAll("button"), function(x){
           x.classList.remove("on"); });
@@ -503,21 +1066,10 @@ function buildScales(){
   });
 }
 
-async function savePeriod(){
-  const start = $("p_start").value;
-  if(!start){ toast("A start date is required"); return; }
-  const rec = {kind:"period", start:start, end:$("p_end").value || null,
-               start_approx:$("p_start_approx").checked, end_approx:$("p_end_approx").checked,
-               note:$("p_note").value || ""};
-  const ok = await send("inbox/" + stamp() + "-period.json", JSON.stringify(rec, null, 2),
-                        "log: period " + start, "Period saved");
-  if(ok){ $("p_note").value = ""; setTimeout(load, 1500); }
-}
-
 async function saveLog(){
-  const extra = ($("sym_other").value || "").split(",").map(function(s){ return s.trim(); })
-                 .filter(Boolean);
-  const rec = {kind:"log", date: today(), energy:picked.energy, mood:picked.mood,
+  const date = $("l_date").value || today();
+  const extra = ($("sym_other").value || "").split(",").map(function(s){ return s.trim(); }).filter(Boolean);
+  const rec = {kind:"log", date:date, energy:picked.energy, mood:picked.mood,
                symptoms: chosenSyms.concat(extra),
                intimacy_interest:picked.intimacy_interest,
                workout_interest:picked.workout_interest,
@@ -525,9 +1077,27 @@ async function saveLog(){
   const empty = !rec.energy && !rec.mood && !rec.symptoms.length && !rec.note &&
                 !rec.intimacy_interest && !rec.workout_interest;
   if(empty){ toast("Nothing to save yet"); return; }
+  notePending("log", date, rec);
+  render();
   const ok = await send("inbox/" + stamp() + "-log.json", JSON.stringify(rec, null, 2),
-                        "log: observations " + rec.date, "Logged");
-  if(ok){ setTimeout(load, 1500); }
+                        "log: observations " + date, "Logged");
+  if(ok){
+    $("l_note").value = ""; $("sym_other").value = "";
+    chosenSyms = [];
+    Array.prototype.forEach.call(document.querySelectorAll(".sym.on,.scale button.on"),
+      function(b){ b.classList.remove("on"); });
+    Object.keys(picked).forEach(function(k){ picked[k] = null; });
+    setTimeout(function(){ load(true); }, 45000);
+  }
+}
+
+async function sendFeedback(verdict, text, about){
+  const t = (text || "").trim();
+  if(!t && !about){ toast("Type what you noticed first"); return; }
+  const rec = {kind:"feedback", date: today(), verdict: verdict, text: t, about: about || ""};
+  await send("inbox/" + stamp() + "-feedback.json", JSON.stringify(rec, null, 2),
+             "feedback: " + (verdict || "note"), "Saved — this shapes tomorrow's tip");
+  $("fb").value = "";
 }
 
 async function askQuestion(){
@@ -550,12 +1120,31 @@ async function askQuestion(){
   const ok = await send("ask/" + stamp() + ".txt", q, "ask: " + q.slice(0, 60),
                         "Sent — the answer lands here in a minute or two");
   $("q_send").textContent = "Ask";
-  if(ok){ $("q").value = ""; setTimeout(load, 60000); }
+  if(ok){ $("q").value = ""; setTimeout(function(){ load(true); }, 60000); }
+}
+
+async function forceRebuild(){
+  if(!connected()){ toast("Add a repo and token in Settings first"); return; }
+  await send("inbox/" + stamp() + "-ping.json",
+             JSON.stringify({kind:"ping", date: today()}, null, 2),
+             "chore: rebuild", "Asked the cloud to rebuild — check back in a minute");
+  setTimeout(function(){ load(true); }, 60000);
+}
+
+/* ------------------------------------------------------------------ tabs */
+function showTab(name){
+  ["today","cal","ask","set"].forEach(function(t){
+    $("tab-" + t).classList.toggle("hide", t !== name);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("nav button"), function(b){
+    b.classList.toggle("on", b.dataset.tab === name);
+  });
+  window.scrollTo(0, 0);
 }
 
 /* ------------------------------------------------------------------ init */
 function initSettings(){
-  const c = cfg();
+  const c = cfgApp();
   $("s_repo").value = c.repo; $("s_token").value = c.token;
   $("s_save").addEventListener("click", async function(){
     ls.set("cs_repo", $("s_repo").value.trim());
@@ -564,14 +1153,47 @@ function initSettings(){
     await load(); await flush();
     $("s_status").textContent = connected() ? "Connected." : "Add both a repo and a token.";
   });
-  $("s_refresh").addEventListener("click", load);
+  $("s_refresh").addEventListener("click", function(){ load(); });
+  $("s_rebuild").addEventListener("click", forceRebuild);
 }
 
+Array.prototype.forEach.call(document.querySelectorAll("nav button"), function(b){
+  b.addEventListener("click", function(){ showTab(b.dataset.tab); });
+});
+
 buildSymptoms(); buildScales(); initSettings();
-$("p_save").addEventListener("click", savePeriod);
+$("l_date").value = today();
+$("l_date").addEventListener("change", renderLoggedToday);
 $("l_save").addEventListener("click", saveLog);
 $("q_send").addEventListener("click", askQuestion);
-$("p_start").value = today();
+$("hrefresh").addEventListener("click", function(){ load(); toast("Refreshing…", 1200); });
+$("prevm").addEventListener("click", function(){
+  calCursor.m--; if(calCursor.m < 0){ calCursor.m = 11; calCursor.y--; } renderCalendar(); });
+$("nextm").addEventListener("click", function(){
+  calCursor.m++; if(calCursor.m > 11){ calCursor.m = 0; calCursor.y++; } renderCalendar(); });
+$("mark_yes").addEventListener("click", function(){ if(selDay) markDay(selDay, true); });
+$("mark_no").addEventListener("click", function(){ if(selDay) markDay(selDay, false); });
+$("mark_log").addEventListener("click", function(){
+  if(!selDay) return;
+  $("l_date").value = selDay; showTab("today"); renderLoggedToday();
+  toast("Logging observations for " + fmt(selDay));
+});
+$("period_today").addEventListener("click", function(){ markDay(today(), true); });
+$("tip_up").addEventListener("click", function(){
+  tipVerdict = "worked"; $("tip_up").classList.add("on"); $("tip_down").classList.remove("on");
+  $("tipwhy").classList.remove("hide"); });
+$("tip_down").addEventListener("click", function(){
+  tipVerdict = "missed"; $("tip_down").classList.add("on"); $("tip_up").classList.remove("on");
+  $("tipwhy").classList.remove("hide"); });
+$("tipsave").addEventListener("click", async function(){
+  await sendFeedback(tipVerdict || "note", $("tipnote").value, $("tiptxt").textContent);
+  $("tipnote").value = ""; $("tipwhy").classList.add("hide");
+  $("tip_up").classList.remove("on"); $("tip_down").classList.remove("on"); tipVerdict = null;
+});
+$("fb_worked").addEventListener("click", function(){ sendFeedback("worked", $("fb").value); });
+$("fb_missed").addEventListener("click", function(){ sendFeedback("missed", $("fb").value); });
+$("fb_note").addEventListener("click", function(){ sendFeedback("note", $("fb").value); });
+
 load();
 if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(function(){}); }
 </script>
