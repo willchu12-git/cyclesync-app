@@ -1,7 +1,7 @@
 /* CycleSync service worker: cache the shell, never cache her data.
    Personal data is fetched live from the private repo (or served from
    localStorage when offline), so it never lands in the HTTP cache. */
-const SHELL = "cyclesync-shell-2026-08-25-1227";
+const SHELL = "cyclesync-shell-2026-08-25-1228";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", function(e){
