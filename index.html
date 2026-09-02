@@ -79,6 +79,24 @@ button,input,select,textarea{font:inherit;color:inherit}
 .bw.low .dot{background:var(--amber)}
 .bw.medium .dot{background:var(--blue)}
 .bw.steady .dot{background:var(--green)}
+.reftable{margin-top:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.reftable .rt-row{display:grid;grid-template-columns:1.3fr repeat(4,1fr);gap:0}
+.reftable .rt-row>div{padding:8px 6px;font-size:11px;line-height:1.3;text-align:center;
+  border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+.reftable .rt-row>div:last-child{border-right:none}
+.reftable .rt-row:last-child>div{border-bottom:none}
+.reftable .rt-head{color:var(--faint);text-transform:uppercase;letter-spacing:.4px;
+  font-size:9.5px;background:var(--card2)}
+.reftable .rt-phase{text-align:left;color:var(--dim);font-weight:600}
+.reftable .rt-row.today{background:#2a2032}
+.reftable .rt-row.today .rt-phase{color:var(--rose-soft)}
+.reflegend{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.reflegend .rl-row{display:flex;gap:8px;font-size:11.5px;color:var(--dim);align-items:baseline}
+.reflegend b{color:var(--ink);min-width:58px;flex:none}
+.evidence{display:inline-block;font-size:9.5px;letter-spacing:.4px;text-transform:uppercase;
+  padding:1px 6px;border-radius:999px;border:1px solid var(--line);margin-right:6px}
+.evidence.moderate{color:var(--blue);border-color:#2c4a6e}
+.evidence.low{color:var(--faint)}
 .takeaway{font-size:15.5px;line-height:1.5;margin:14px 0 0;color:#ece5f2}
 .tip{margin-top:12px;background:#241b28;border:1px solid #3a2b3f;border-radius:14px;padding:12px}
 .tip .lab{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--rose-soft)}
@@ -220,6 +238,16 @@ nav button.on{color:var(--rose-soft)}
         <button class="btn sm" id="tipsave">Save feedback</button>
       </div>
     </div>
+  </div>
+
+  <div class="card">
+    <details id="refWrap">
+      <summary><h2 style="display:inline">Typical cycle characteristics</h2></summary>
+      <div class="sub">General population research, not personalized and not a prediction for
+        today — her own logged patterns above always take priority over this.</div>
+      <div class="reftable" id="cycleRef"></div>
+      <div class="note" id="cycleRefNote"></div>
+    </details>
   </div>
 
   <div class="card hero" id="hero">
@@ -380,7 +408,7 @@ nav button.on{color:var(--rose-soft)}
 <script>
 const EMBED = null;
 const DEFAULT_REPO = "willchu12-git/cyclesync-data";
-const BUILT = "2026-09-02 15:05";
+const BUILT = "2026-09-02 15:53";
 const LOCAL_API = "http://127.0.0.1:8777";
 const GENERIC = {"menstrual": {"energy": 2.2, "mood": 2.6, "workout_interest": 2.0, "intimacy_interest": 2.2}, "follicular": {"energy": 3.8, "mood": 3.8, "workout_interest": 3.8, "intimacy_interest": 3.2}, "ovulatory / fertile": {"energy": 4.2, "mood": 4.0, "workout_interest": 4.2, "intimacy_interest": 3.6}, "early luteal": {"energy": 3.3, "mood": 3.3, "workout_interest": 3.2, "intimacy_interest": 3.0}, "late luteal / premenstrual": {"energy": 2.5, "mood": 2.5, "workout_interest": 2.4, "intimacy_interest": 2.6}, "period expected / overdue": {"energy": 2.6, "mood": 2.6, "workout_interest": 2.5, "intimacy_interest": 2.6}};          /* kept in step with engine/scores.py at build time */
 
@@ -819,8 +847,9 @@ function render(){
   LIVE = recompute();
   $("today").textContent = new Date().toLocaleDateString(undefined,
     {weekday:"long", month:"long", day:"numeric"});
-  renderDash(); renderHero(); renderBrief(); renderCalendar(); renderTimeline();
-  renderQA(); renderFeedback(); renderLoggedToday(); renderDevice(); ensureFormMatchesDate();
+  renderDash(); renderHero(); renderBrief(); renderCycleReference(); renderCalendar();
+  renderTimeline(); renderQA(); renderFeedback(); renderLoggedToday(); renderDevice();
+  ensureFormMatchesDate();
   $("foot").textContent = (STATE && STATE.disclaimer) ? STATE.disclaimer :
     "Not medical advice. Predictions are estimates from sparse data. Her own words always win.";
 }
@@ -941,6 +970,34 @@ function renderBrief(){
           (BRIEF.source === "fallback" ? " · written offline by the engine (Claude was unreachable)"
                                        : " · written by Claude") + "</div>";
   box.innerHTML = html;
+}
+
+const PHASE_SHORT = {"menstrual":"Period", "follicular":"Follicular",
+  "ovulatory / fertile":"Ovulation", "early luteal":"Early luteal",
+  "late luteal / premenstrual":"Late luteal"};
+function renderCycleReference(){
+  const ref = STATE && STATE.cycle_reference;
+  if(!ref){ $("cycleRef").innerHTML = ""; $("cycleRefNote").textContent = ""; return; }
+  const todayPhase = LIVE.estimate && LIVE.estimate.status === "ok" ? LIVE.estimate.phase : null;
+  const cols = ref.fields.map(function(f){ return f.key; });
+  let html = '<div class="rt-row rt-head"><div></div>' +
+    ref.fields.map(function(f){ return "<div>" + esc(f.label) + "</div>"; }).join("") + "</div>";
+  html += ref.phases.map(function(p){
+    const isToday = p.phase === todayPhase;
+    return '<div class="rt-row' + (isToday ? " today" : "") + '"><div class="rt-phase">' +
+      esc(PHASE_SHORT[p.phase] || p.phase) + (isToday ? " (today)" : "") + "</div>" +
+      cols.map(function(k){
+        const v = p.values[k];
+        return "<div>" + esc((v && v.short) || "--") + "</div>";
+      }).join("") + "</div>";
+  }).join("");
+  $("cycleRef").innerHTML = html;
+  const legend = ref.fields.map(function(f){
+    return '<div class="rl-row"><b>' + esc(f.label) + '</b><span><span class="evidence ' +
+      esc(f.level) + '">' + esc(f.level) + " evidence</span>" + esc(f.note) + "</span></div>";
+  }).join("");
+  $("cycleRefNote").innerHTML = '<div class="reflegend">' + legend + "</div><div class=\"note\">" +
+    esc(ref.disclaimer) + "</div>";
 }
 
 /* -------------------------------------------------------------- calendar */
