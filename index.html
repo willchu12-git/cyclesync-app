@@ -97,6 +97,15 @@ button,input,select,textarea{font:inherit;color:inherit}
   padding:1px 6px;border-radius:999px;border:1px solid var(--line);margin-right:6px}
 .evidence.moderate{color:var(--blue);border-color:#2c4a6e}
 .evidence.low{color:var(--faint)}
+.rangebtns{display:flex;gap:8px;margin:12px 0}
+.rangebtns button{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:11px;
+  padding:9px 0;font-size:13px;cursor:pointer;color:var(--dim)}
+.rangebtns button.on{background:var(--rose);border-color:var(--rose);color:#1a1016;font-weight:650}
+#trendChart{width:100%;overflow-x:auto}
+#trendChart svg{display:block;width:100%;height:auto}
+.chartlegend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--dim)}
+.chartlegend span{display:inline-flex;align-items:center;gap:5px}
+.chartlegend i{width:10px;height:10px;border-radius:50%;display:inline-block}
 .takeaway{font-size:15.5px;line-height:1.5;margin:14px 0 0;color:#ece5f2}
 .tip{margin-top:12px;background:#241b28;border:1px solid #3a2b3f;border-radius:14px;padding:12px}
 .tip .lab{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--rose-soft)}
@@ -351,6 +360,23 @@ nav button.on{color:var(--rose-soft)}
   </div>
 </section>
 
+<!-- ------------------------------------------------------------ TRENDS -->
+<section id="tab-trends" class="hide">
+  <div class="card">
+    <h2>Trends</h2>
+    <div class="sub">What you've logged, plus the next 5 days projected from the current
+      cycle model — not a promise, just today's dashboard math run forward.</div>
+    <div class="rangebtns" id="rangebtns">
+      <button data-range="7" class="on">7 days</button>
+      <button data-range="14">14 days</button>
+      <button data-range="30">30 days</button>
+    </div>
+    <div id="trendChart"></div>
+    <div class="chartlegend" id="chartLegend"></div>
+    <div class="note" id="trendNote"></div>
+  </div>
+</section>
+
 <!-- --------------------------------------------------------------- ASK -->
 <section id="tab-ask" class="hide">
   <div class="card">
@@ -401,6 +427,7 @@ nav button.on{color:var(--rose-soft)}
 <nav>
   <button data-tab="today" class="on"><span class="ic">&#9728;</span>Today</button>
   <button data-tab="cal"><span class="ic">&#128197;</span>Calendar</button>
+  <button data-tab="trends"><span class="ic">&#128200;</span>Trends</button>
   <button data-tab="ask"><span class="ic">&#128172;</span>Ask</button>
   <button data-tab="set"><span class="ic">&#9881;</span>Settings</button>
 </nav>
@@ -408,7 +435,7 @@ nav button.on{color:var(--rose-soft)}
 <script>
 const EMBED = null;
 const DEFAULT_REPO = "willchu12-git/cyclesync-data";
-const BUILT = "2026-09-02 15:53";
+const BUILT = "2026-09-02 16:03";
 const LOCAL_API = "http://127.0.0.1:8777";
 const GENERIC = {"menstrual": {"energy": 2.2, "mood": 2.6, "workout_interest": 2.0, "intimacy_interest": 2.2}, "follicular": {"energy": 3.8, "mood": 3.8, "workout_interest": 3.8, "intimacy_interest": 3.2}, "ovulatory / fertile": {"energy": 4.2, "mood": 4.0, "workout_interest": 4.2, "intimacy_interest": 3.6}, "early luteal": {"energy": 3.3, "mood": 3.3, "workout_interest": 3.2, "intimacy_interest": 3.0}, "late luteal / premenstrual": {"energy": 2.5, "mood": 2.5, "workout_interest": 2.4, "intimacy_interest": 2.6}, "period expected / overdue": {"energy": 2.6, "mood": 2.6, "workout_interest": 2.5, "intimacy_interest": 2.6}};          /* kept in step with engine/scores.py at build time */
 
@@ -424,6 +451,7 @@ let calCursor = null, selDay = null, tipVerdict = null;
 const picked = {energy:null, mood:null, intimacy_interest:null, workout_interest:null};
 let chosenSyms = [];
 let intimateToday = null;               /* true | false | null -- a fact, not a rating */
+let trendRange = 7;                     /* 7 | 14 | 30 */
 let pendingQuestion = null;             /* {question, askedAt} while waiting on the cloud */
 
 function toast(msg, ms){
@@ -848,8 +876,8 @@ function render(){
   $("today").textContent = new Date().toLocaleDateString(undefined,
     {weekday:"long", month:"long", day:"numeric"});
   renderDash(); renderHero(); renderBrief(); renderCycleReference(); renderCalendar();
-  renderTimeline(); renderQA(); renderFeedback(); renderLoggedToday(); renderDevice();
-  ensureFormMatchesDate();
+  renderTimeline(); renderTrends(); renderQA(); renderFeedback(); renderLoggedToday();
+  renderDevice(); ensureFormMatchesDate();
   $("foot").textContent = (STATE && STATE.disclaimer) ? STATE.disclaimer :
     "Not medical advice. Predictions are estimates from sparse data. Her own words always win.";
 }
@@ -998,6 +1026,124 @@ function renderCycleReference(){
   }).join("");
   $("cycleRefNote").innerHTML = '<div class="reflegend">' + legend + "</div><div class=\"note\">" +
     esc(ref.disclaimer) + "</div>";
+}
+
+/* ---------------------------------------------------------------- trends */
+const TREND_COLORS = {energy:"#e86a8a", mood:"#7aa7f2", libido:"#e8b45e"};
+
+function renderRangeButtons(){
+  Array.prototype.forEach.call(document.querySelectorAll("#rangebtns button"), function(b){
+    b.classList.toggle("on", Number(b.dataset.range) === trendRange);
+  });
+}
+
+function buildChartSVG(history, fc){
+  const W = 700, H = 230, padL = 30, padR = 8, padT = 12, padB = 26;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const n = history.length + fc.length;
+  const xAt = function(i){ return padL + (n <= 1 ? 0 : (i / (n - 1)) * plotW); };
+  const yAt = function(v){ return padT + (5 - v) / 4 * plotH; };
+  const fields = ["energy", "mood", "libido"];
+
+  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg">';
+  /* gridlines at 1/3/5 */
+  [1, 3, 5].forEach(function(v){
+    const y = yAt(v);
+    svg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y +
+           '" stroke="#2c2637" stroke-width="1"/>';
+    svg += '<text x="4" y="' + (y + 3) + '" font-size="10" fill="#6f6880">' + v + "</text>";
+  });
+  /* divider between logged history and forecast */
+  if(history.length && fc.length){
+    const dx = xAt(history.length - 1) + (xAt(history.length) - xAt(history.length - 1)) / 2;
+    svg += '<line x1="' + dx + '" y1="' + padT + '" x2="' + dx + '" y2="' + (H - padB) +
+           '" stroke="#3a3247" stroke-width="1" stroke-dasharray="2,3"/>';
+    svg += '<text x="' + dx + '" y="' + (padT - 2) + '" font-size="9" fill="#6f6880" ' +
+           'text-anchor="middle">forecast &#8594;</text>';
+  }
+
+  fields.forEach(function(field){
+    const color = TREND_COLORS[field];
+    /* solid history line, broken across true gaps (no bracket to interpolate from) */
+    let d = "", drawing = false;
+    for(let i = 0; i < history.length; i++){
+      const v = history[i][field];
+      if(v == null){ drawing = false; continue; }
+      const x = xAt(i), y = yAt(v);
+      d += (drawing ? "L" : "M") + x.toFixed(1) + "," + y.toFixed(1) + " ";
+      drawing = true;
+    }
+    if(d) svg += '<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="2"/>';
+
+    /* dashed line from the last real history point through the forecast */
+    if(fc.length){
+      let lastIdx = -1;
+      for(let i = history.length - 1; i >= 0; i--){
+        if(history[i][field] != null){ lastIdx = i; break; }
+      }
+      let fd = "";
+      if(lastIdx >= 0){
+        fd += "M" + xAt(lastIdx).toFixed(1) + "," + yAt(history[lastIdx][field]).toFixed(1) + " ";
+      }
+      for(let i = 0; i < fc.length; i++){
+        const v = fc[i][field];
+        if(v == null) continue;
+        const x = xAt(history.length + i), y = yAt(v);
+        fd += (fd ? "L" : "M") + x.toFixed(1) + "," + y.toFixed(1) + " ";
+      }
+      if(fd.trim()){
+        svg += '<path d="' + fd + '" fill="none" stroke="' + color + '" stroke-width="2" ' +
+               'stroke-dasharray="4,4" opacity="0.75"/>';
+      }
+    }
+
+    /* points: solid = logged, hollow = interpolated, small hollow = forecast */
+    for(let i = 0; i < history.length; i++){
+      const v = history[i][field];
+      if(v == null) continue;
+      const interp = (history[i].interpolated || []).indexOf(field) >= 0;
+      const x = xAt(i), y = yAt(v);
+      svg += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' +
+             (interp ? 2.5 : 3.5) + '" fill="' + (interp ? "#1c1922" : color) +
+             '" stroke="' + color + '" stroke-width="1.5"/>';
+    }
+    for(let i = 0; i < fc.length; i++){
+      const v = fc[i][field];
+      if(v == null) continue;
+      const x = xAt(history.length + i), y = yAt(v);
+      svg += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="2.5" fill="#1c1922" ' +
+             'stroke="' + color + '" stroke-width="1.5" stroke-dasharray="1.5,1.5"/>';
+    }
+  });
+
+  /* x-axis labels: today marker + a handful of evenly-spaced dates */
+  const allDates = history.map(function(r){ return r.date; }).concat(fc.map(function(r){ return r.date; }));
+  const labelEvery = Math.max(1, Math.ceil(n / 6));
+  for(let i = 0; i < n; i += labelEvery){
+    const x = xAt(i);
+    svg += '<text x="' + x.toFixed(1) + '" y="' + (H - 6) + '" font-size="9" fill="#6f6880" ' +
+           'text-anchor="middle">' + fmt(allDates[i]) + "</text>";
+  }
+  svg += "</svg>";
+  return svg;
+}
+
+function renderTrends(){
+  const tr = STATE && STATE.trends;
+  renderRangeButtons();
+  if(!tr){ $("trendChart").innerHTML = '<div class="sub">Not enough data yet.</div>'; return; }
+  const history = tr.history[trendRange] || tr.history["7"] || [];
+  const fc = tr.forecast || [];
+  $("trendChart").innerHTML = buildChartSVG(history, fc);
+  $("chartLegend").innerHTML = tr.fields.map(function(f){
+    return '<span><i style="background:' + TREND_COLORS[f.key] + '"></i>' + esc(f.label) + "</span>";
+  }).join("") + '<span><i style="background:#1c1922;border:1.5px solid #6f6880"></i>trend-lined ' +
+    'or forecast</span>';
+  const loggedDays = history.filter(function(r){ return r.logged; }).length;
+  $("trendNote").textContent = loggedDays + " of " + history.length + " days actually logged in " +
+    "this window; the rest is trend-lined between the nearest real points, or projected from the " +
+    "current cycle model for the next 5 days. Not personalized where she has no data yet in that " +
+    "phase -- same caveats as the dials above.";
 }
 
 /* -------------------------------------------------------------- calendar */
@@ -1320,7 +1466,7 @@ async function forceRebuild(){
 
 /* ------------------------------------------------------------------ tabs */
 function showTab(name){
-  ["today","cal","ask","set"].forEach(function(t){
+  ["today","cal","trends","ask","set"].forEach(function(t){
     $("tab-" + t).classList.toggle("hide", t !== name);
   });
   Array.prototype.forEach.call(document.querySelectorAll("nav button"), function(b){
@@ -1356,6 +1502,9 @@ $("l_date").addEventListener("change", function(){
 $("l_save").addEventListener("click", saveLog);
 $("q_send").addEventListener("click", askQuestion);
 $("hrefresh").addEventListener("click", function(){ load(); toast("Refreshing…", 1200); });
+Array.prototype.forEach.call(document.querySelectorAll("#rangebtns button"), function(b){
+  b.addEventListener("click", function(){ trendRange = Number(b.dataset.range); renderTrends(); });
+});
 $("prevm").addEventListener("click", function(){
   calCursor.m--; if(calCursor.m < 0){ calCursor.m = 11; calCursor.y--; } renderCalendar(); });
 $("nextm").addEventListener("click", function(){
