@@ -101,8 +101,18 @@ button,input,select,textarea{font:inherit;color:inherit}
 .rangebtns button{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:11px;
   padding:9px 0;font-size:13px;cursor:pointer;color:var(--dim)}
 .rangebtns button.on{background:var(--rose);border-color:var(--rose);color:#1a1016;font-weight:650}
-#trendChart{width:100%;overflow-x:auto}
+.trendhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+#trendChart{width:100%;overflow-x:auto;position:relative;touch-action:pan-y}
 #trendChart svg{display:block;width:100%;height:auto}
+#trendChart #chartCapture{cursor:crosshair}
+#trendChart.expanded{position:fixed;left:12px;right:12px;top:12px;bottom:12px;z-index:60;
+  background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;
+  overflow-y:auto;touch-action:none}
+body.chart-modal-open{overflow:hidden}
+.charttip{position:absolute;background:#2b2436;border:1px solid var(--line);border-radius:10px;
+  padding:7px 10px;font-size:11.5px;line-height:1.5;pointer-events:none;opacity:0;
+  transition:opacity .1s;white-space:nowrap;z-index:2;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+.charttip.show{opacity:1}
 .chartlegend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--dim)}
 .chartlegend span{display:inline-flex;align-items:center;gap:5px}
 .chartlegend i{width:10px;height:10px;border-radius:50%;display:inline-block}
@@ -363,9 +373,13 @@ nav button.on{color:var(--rose-soft)}
 <!-- ------------------------------------------------------------ TRENDS -->
 <section id="tab-trends" class="hide">
   <div class="card">
-    <h2>Trends</h2>
+    <div class="trendhead">
+      <h2 style="margin:0">Trends</h2>
+      <button class="iconbtn" id="chartExpandBtn" style="width:auto;padding:0 12px;font-size:12px">Expand</button>
+    </div>
     <div class="sub">What you've logged, plus the next 5 days projected from the current
-      cycle model — not a promise, just today's dashboard math run forward.</div>
+      cycle model — not a promise, just today's dashboard math run forward. Touch or hover
+      a point on the chart for the numbers on that day.</div>
     <div class="rangebtns" id="rangebtns">
       <button data-range="7" class="on">7 days</button>
       <button data-range="14">14 days</button>
@@ -435,7 +449,7 @@ nav button.on{color:var(--rose-soft)}
 <script>
 const EMBED = null;
 const DEFAULT_REPO = "willchu12-git/cyclesync-data";
-const BUILT = "2026-09-03 04:48";
+const BUILT = "2026-09-03 14:43";
 const LOCAL_API = "http://127.0.0.1:8777";
 const GENERIC = {"menstrual": {"energy": 2.2, "mood": 2.6, "workout_interest": 2.0, "intimacy_interest": 2.2}, "follicular": {"energy": 3.8, "mood": 3.8, "workout_interest": 3.8, "intimacy_interest": 3.2}, "ovulatory / fertile": {"energy": 4.2, "mood": 4.0, "workout_interest": 4.2, "intimacy_interest": 3.6}, "early luteal": {"energy": 3.3, "mood": 3.3, "workout_interest": 3.2, "intimacy_interest": 3.0}, "late luteal / premenstrual": {"energy": 2.5, "mood": 2.5, "workout_interest": 2.4, "intimacy_interest": 2.6}, "period expected / overdue": {"energy": 2.6, "mood": 2.6, "workout_interest": 2.5, "intimacy_interest": 2.6}};          /* kept in step with engine/scores.py at build time */
 
@@ -1030,6 +1044,10 @@ function renderCycleReference(){
 
 /* ---------------------------------------------------------------- trends */
 const TREND_COLORS = {energy:"#e86a8a", mood:"#7aa7f2", libido:"#e8b45e"};
+const TREND_LABELS = {energy:"Energy", mood:"Mood", libido:"Libido"};
+const CHART_PAD = {L:30, R:8, T:12};
+let chartExpanded = false;
+let chartHistory = [], chartForecast = [];    /* last-rendered data, for the tooltip lookup */
 
 function renderRangeButtons(){
   Array.prototype.forEach.call(document.querySelectorAll("#rangebtns button"), function(b){
@@ -1037,15 +1055,24 @@ function renderRangeButtons(){
   });
 }
 
-function buildChartSVG(history, fc){
-  const W = 700, H = 230, padL = 30, padR = 8, padT = 12, padB = 26;
+function chartGeom(history, fc){
+  const W = 700, H = chartExpanded ? 420 : 230, padB = 26;
+  const padL = CHART_PAD.L, padR = CHART_PAD.R, padT = CHART_PAD.T;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const n = history.length + fc.length;
   const xAt = function(i){ return padL + (n <= 1 ? 0 : (i / (n - 1)) * plotW); };
   const yAt = function(v){ return padT + (5 - v) / 4 * plotH; };
+  return {W:W, H:H, padL:padL, padR:padR, padT:padT, padB:padB, plotW:plotW, plotH:plotH, n:n,
+          xAt:xAt, yAt:yAt};
+}
+
+function buildChartSVG(history, fc){
+  const g = chartGeom(history, fc);
+  const W = g.W, H = g.H, padL = g.padL, padR = g.padR, padT = g.padT, padB = g.padB;
+  const n = g.n, xAt = g.xAt, yAt = g.yAt;
   const fields = ["energy", "mood", "libido"];
 
-  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg">';
+  let svg = '<svg id="trendSvg" viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg">';
   /* gridlines at 1/3/5 */
   [1, 3, 5].forEach(function(v){
     const y = yAt(v);
@@ -1124,26 +1151,163 @@ function buildChartSVG(history, fc){
     svg += '<text x="' + x.toFixed(1) + '" y="' + (H - 6) + '" font-size="9" fill="#6f6880" ' +
            'text-anchor="middle">' + fmt(allDates[i]) + "</text>";
   }
+  /* crosshair + per-field cursor dots for the touch/hover tooltip -- hidden until moved */
+  svg += '<line id="cursorLine" x1="0" y1="' + padT + '" x2="0" y2="' + (H - padB) +
+         '" stroke="#8a8296" stroke-width="1" opacity="0"/>';
+  fields.forEach(function(field){
+    svg += '<circle id="cursor_' + field + '" r="4" fill="' + TREND_COLORS[field] +
+           '" stroke="#121016" stroke-width="1.5" opacity="0"/>';
+  });
+  /* transparent capture layer -- sits on top, receives all pointer/touch events */
+  svg += '<rect id="chartCapture" x="' + padL + '" y="0" width="' + (W - padL - padR) +
+         '" height="' + H + '" fill="transparent"/>';
   svg += "</svg>";
   return svg;
+}
+
+function chartIndexFromClientX(clientX){
+  const svg = $("trendSvg");
+  if(!svg) return null;
+  const rect = svg.getBoundingClientRect();
+  if(!rect.width) return null;
+  const g = chartGeom(chartHistory, chartForecast);
+  const svgX = ((clientX - rect.left) / rect.width) * g.W;
+  if(g.n <= 1) return 0;
+  const raw = ((svgX - g.padL) / g.plotW) * (g.n - 1);
+  return Math.max(0, Math.min(g.n - 1, Math.round(raw)));
+}
+
+function rowAt(i){
+  return i < chartHistory.length ? chartHistory[i] : chartForecast[i - chartHistory.length];
+}
+
+function showChartTip(clientX, clientY){
+  const i = chartIndexFromClientX(clientX);
+  if(i == null) return;
+  const row = rowAt(i);
+  if(!row) return;
+  const g = chartGeom(chartHistory, chartForecast);
+  const isForecast = i >= chartHistory.length;
+  const x = g.xAt(i);
+
+  const line = document.getElementById("cursorLine");
+  if(line){ line.setAttribute("x1", x); line.setAttribute("x2", x); line.setAttribute("opacity", "1"); }
+  ["energy", "mood", "libido"].forEach(function(field){
+    const dot = document.getElementById("cursor_" + field);
+    if(!dot) return;
+    const v = row[field];
+    if(v == null){ dot.setAttribute("opacity", "0"); return; }
+    dot.setAttribute("cx", x); dot.setAttribute("cy", g.yAt(v)); dot.setAttribute("opacity", "1");
+  });
+
+  const tip = $("charttip");
+  const bits = ["energy", "mood", "libido"].filter(function(f){ return row[f] != null; })
+    .map(function(f){
+      return '<span style="color:' + TREND_COLORS[f] + '">' + TREND_LABELS[f] + " " +
+             row[f].toFixed(1) + "</span>";
+    });
+  let head = fmt(row.date) + (isForecast ? " (projected)" : row.logged ? "" : " (trend-lined)");
+  tip.innerHTML = "<b>" + esc(head) + "</b><br>" + (bits.join(" · ") || "no data");
+  tip.classList.add("show");
+  const wrap = $("trendChart").getBoundingClientRect();
+  let left = x / g.W * wrap.width;
+  left = Math.max(4, Math.min(wrap.width - 130, left - 60));
+  tip.style.left = left + "px";
+  tip.style.top = "4px";
+}
+
+function hideChartTip(){
+  const line = document.getElementById("cursorLine");
+  if(line) line.setAttribute("opacity", "0");
+  ["energy", "mood", "libido"].forEach(function(field){
+    const dot = document.getElementById("cursor_" + field);
+    if(dot) dot.setAttribute("opacity", "0");
+  });
+  const tip = $("charttip");
+  if(tip) tip.classList.remove("show");
+}
+
+function wireChartPointer(){
+  const cap = document.getElementById("chartCapture");
+  if(!cap) return;
+  cap.addEventListener("touchstart", function(e){ e.preventDefault();
+    showChartTip(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
+  cap.addEventListener("touchmove", function(e){ e.preventDefault();
+    showChartTip(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
+  cap.addEventListener("touchend", hideChartTip);
+  cap.addEventListener("mousemove", function(e){ showChartTip(e.clientX, e.clientY); });
+  cap.addEventListener("mouseleave", hideChartTip);
+}
+
+function toggleChartExpand(){
+  chartExpanded = !chartExpanded;
+  document.body.classList.toggle("chart-modal-open", chartExpanded);
+  $("trendChart").classList.toggle("expanded", chartExpanded);
+  $("chartExpandBtn").textContent = chartExpanded ? "Close" : "Expand";
+  renderTrends();
+}
+
+/* ---- trend + forecast narrative, changes with the selected range ---- */
+function seriesTrendPhrase(history, field){
+  const pts = history.map(function(r, i){ return {i:i, v:r[field]}; })
+                     .filter(function(p){ return p.v != null; });
+  const realCount = history.filter(function(r){
+    return r.logged && r[field] != null && (r.interpolated || []).indexOf(field) < 0;
+  }).length;
+  if(pts.length < 2){
+    return TREND_LABELS[field] + ": not enough logged data yet to show a trend.";
+  }
+  const third = Math.max(1, Math.floor(pts.length / 3));
+  const first = pts.slice(0, third), last = pts.slice(-third);
+  const avg = function(arr){ return arr.reduce(function(a,p){ return a+p.v; }, 0) / arr.length; };
+  const a1 = avg(first), a2 = avg(last), diff = a2 - a1;
+  const shape = Math.abs(diff) < 0.4 ? "held fairly steady" : (diff > 0 ? "trended up" : "trended down");
+  const range = "(" + a1.toFixed(1) + " → " + a2.toFixed(1) + ")";
+  const thin = realCount < 3 ? " -- based on only " + realCount + " actually-logged day(s), so treat " +
+    "this loosely" : "";
+  return TREND_LABELS[field] + " has " + shape + " " + range + thin + ".";
+}
+
+function forecastPhrase(fc, field){
+  const vals = fc.map(function(r){ return r[field]; }).filter(function(v){ return v != null; });
+  if(!vals.length) return null;
+  const avg = vals.reduce(function(a,b){ return a+b; }, 0) / vals.length;
+  const word = wordFor(field, avg);
+  const grounded = fc.some(function(r){ return (r[field + "_n"] || 0) > 0; });
+  return TREND_LABELS[field] + " " + word + (grounded ? "" : " (generic pattern -- little of her " +
+    "own data in that stretch yet)");
 }
 
 function renderTrends(){
   const tr = STATE && STATE.trends;
   renderRangeButtons();
   if(!tr){ $("trendChart").innerHTML = '<div class="sub">Not enough data yet.</div>'; return; }
-  const history = tr.history[trendRange] || tr.history["7"] || [];
-  const fc = tr.forecast || [];
-  $("trendChart").innerHTML = buildChartSVG(history, fc);
+  chartHistory = tr.history[trendRange] || tr.history["7"] || [];
+  chartForecast = tr.forecast || [];
+  $("trendChart").innerHTML = buildChartSVG(chartHistory, chartForecast) +
+    '<div class="charttip" id="charttip"></div>';
+  $("trendChart").classList.toggle("expanded", chartExpanded);
+  wireChartPointer();
   $("chartLegend").innerHTML = tr.fields.map(function(f){
     return '<span><i style="background:' + TREND_COLORS[f.key] + '"></i>' + esc(f.label) + "</span>";
   }).join("") + '<span><i style="background:#1c1922;border:1.5px solid #6f6880"></i>trend-lined ' +
     'or forecast</span>';
-  const loggedDays = history.filter(function(r){ return r.logged; }).length;
-  $("trendNote").textContent = loggedDays + " of " + history.length + " days actually logged in " +
-    "this window; the rest is trend-lined between the nearest real points, or projected from the " +
-    "current cycle model for the next 5 days. Not personalized where she has no data yet in that " +
-    "phase -- same caveats as the dials above.";
+
+  const loggedDays = chartHistory.filter(function(r){ return r.logged; }).length;
+  const rangeLabel = trendRange + "-day";
+  const trendLines = ["energy", "mood", "libido"].map(function(f){
+    return seriesTrendPhrase(chartHistory, f); });
+  const fcLines = ["energy", "mood", "libido"].map(function(f){
+    return forecastPhrase(chartForecast, f); }).filter(Boolean);
+
+  let html = "<p><b>Over this " + rangeLabel + " window</b> (" + loggedDays + " of " +
+    chartHistory.length + " days actually logged): " + trendLines.join(" ") + "</p>";
+  if(fcLines.length){
+    html += "<p style=\"margin-top:8px\"><b>Next few days:</b> " + fcLines.join("; ") +
+      ". Projected from the current cycle model, not a promise -- her own cues over the next " +
+      "few days matter more than this.</p>";
+  }
+  $("trendNote").innerHTML = html;
 }
 
 /* -------------------------------------------------------------- calendar */
@@ -1505,6 +1669,7 @@ $("hrefresh").addEventListener("click", function(){ load(); toast("Refreshing…
 Array.prototype.forEach.call(document.querySelectorAll("#rangebtns button"), function(b){
   b.addEventListener("click", function(){ trendRange = Number(b.dataset.range); renderTrends(); });
 });
+$("chartExpandBtn").addEventListener("click", toggleChartExpand);
 $("prevm").addEventListener("click", function(){
   calCursor.m--; if(calCursor.m < 0){ calCursor.m = 11; calCursor.y--; } renderCalendar(); });
 $("nextm").addEventListener("click", function(){
