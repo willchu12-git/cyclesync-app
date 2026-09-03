@@ -107,8 +107,13 @@ button,input,select,textarea{font:inherit;color:inherit}
 #trendChart #chartCapture{cursor:crosshair}
 #trendChart.expanded{position:fixed;left:12px;right:12px;top:12px;bottom:12px;z-index:60;
   background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;
-  overflow-y:auto;touch-action:none}
+  padding-top:44px;overflow-y:auto;touch-action:none}
 body.chart-modal-open{overflow:hidden}
+.chart-close{display:none}
+#trendChart.expanded .chart-close{display:flex;position:absolute;top:10px;right:14px;z-index:5;
+  width:30px;height:30px;align-items:center;justify-content:center;border-radius:50%;
+  background:var(--card2);border:1px solid var(--line);color:var(--ink);font-size:18px;
+  line-height:1;cursor:pointer}
 .charttip{position:absolute;background:#2b2436;border:1px solid var(--line);border-radius:10px;
   padding:7px 10px;font-size:11.5px;line-height:1.5;pointer-events:none;opacity:0;
   transition:opacity .1s;white-space:nowrap;z-index:2;box-shadow:0 4px 14px rgba(0,0,0,.35)}
@@ -449,7 +454,7 @@ nav button.on{color:var(--rose-soft)}
 <script>
 const EMBED = null;
 const DEFAULT_REPO = "willchu12-git/cyclesync-data";
-const BUILT = "2026-09-03 14:43";
+const BUILT = "2026-09-03 14:56";
 const LOCAL_API = "http://127.0.0.1:8777";
 const GENERIC = {"menstrual": {"energy": 2.2, "mood": 2.6, "workout_interest": 2.0, "intimacy_interest": 2.2}, "follicular": {"energy": 3.8, "mood": 3.8, "workout_interest": 3.8, "intimacy_interest": 3.2}, "ovulatory / fertile": {"energy": 4.2, "mood": 4.0, "workout_interest": 4.2, "intimacy_interest": 3.6}, "early luteal": {"energy": 3.3, "mood": 3.3, "workout_interest": 3.2, "intimacy_interest": 3.0}, "late luteal / premenstrual": {"energy": 2.5, "mood": 2.5, "workout_interest": 2.4, "intimacy_interest": 2.6}, "period expected / overdue": {"energy": 2.6, "mood": 2.6, "workout_interest": 2.5, "intimacy_interest": 2.6}};          /* kept in step with engine/scores.py at build time */
 
@@ -1285,9 +1290,11 @@ function renderTrends(){
   chartHistory = tr.history[trendRange] || tr.history["7"] || [];
   chartForecast = tr.forecast || [];
   $("trendChart").innerHTML = buildChartSVG(chartHistory, chartForecast) +
-    '<div class="charttip" id="charttip"></div>';
+    '<div class="charttip" id="charttip"></div>' +
+    '<button class="chart-close" id="chartCloseBtn" aria-label="Close">&times;</button>';
   $("trendChart").classList.toggle("expanded", chartExpanded);
   wireChartPointer();
+  $("chartCloseBtn").addEventListener("click", toggleChartExpand);
   $("chartLegend").innerHTML = tr.fields.map(function(f){
     return '<span><i style="background:' + TREND_COLORS[f.key] + '"></i>' + esc(f.label) + "</span>";
   }).join("") + '<span><i style="background:#1c1922;border:1.5px solid #6f6880"></i>trend-lined ' +
