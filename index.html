@@ -162,6 +162,11 @@ body.chart-modal-open{overflow:hidden}
 .brief p{color:#e6dfec}
 .brief ul{margin:6px 0 10px;padding-left:18px;color:#e6dfec}
 .brief li{margin:3px 0}
+.briefpart{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.briefpart:first-child{margin-top:0;padding-top:0;border-top:none}
+.briefpart .partlabel{font-size:10.5px;letter-spacing:.7px;text-transform:uppercase;
+  color:var(--rose-soft);font-weight:650;margin-bottom:4px}
+.briefpart p{margin:0}
 .src{font-size:11px;color:var(--faint);margin-top:12px}
 .stale{background:#2a2130;border:1px solid #4a3a2a;border-radius:12px;padding:10px 12px;
   font-size:12.5px;color:var(--amber);margin-bottom:12px;line-height:1.45}
@@ -463,7 +468,7 @@ nav button.on{color:var(--rose-soft)}
 <script>
 const EMBED = null;
 const DEFAULT_REPO = "willchu12-git/cyclesync-data";
-const BUILT = "2026-09-23 20:48";
+const BUILT = "2026-09-23 21:05";
 const LOCAL_API = "http://127.0.0.1:8777";
 const GENERIC = {"menstrual": {"energy": 2.2, "mood": 2.6, "workout_interest": 2.0, "intimacy_interest": 2.2}, "follicular": {"energy": 3.8, "mood": 3.8, "workout_interest": 3.8, "intimacy_interest": 3.2}, "ovulatory / fertile": {"energy": 4.2, "mood": 4.0, "workout_interest": 4.2, "intimacy_interest": 3.6}, "early luteal": {"energy": 3.3, "mood": 3.3, "workout_interest": 3.2, "intimacy_interest": 3.0}, "late luteal / premenstrual": {"energy": 2.5, "mood": 2.5, "workout_interest": 2.4, "intimacy_interest": 2.6}, "period expected / overdue": {"energy": 2.6, "mood": 2.6, "workout_interest": 2.5, "intimacy_interest": 2.6}};          /* kept in step with engine/scores.py at build time */
 
@@ -1024,18 +1029,35 @@ function renderHero(){
 const BRIEF_SECTIONS = [["overview","Overview"],["show_up","How to show up for her"],
                         ["connection","Connection & intimacy"],["movement","Movement"]];
 
+const PART_LABELS = {general: "General pattern", personal: "Her own data", summary: "Bottom line"};
+const PART_ORDER = ["general", "personal", "summary"];
+
+/* a section is either the new {general, personal, summary} shape, or -- for briefings
+   archived before this existed -- a plain string. Render either correctly. */
+function sectionBodyHTML(sec){
+  if(typeof sec === "string") return mdish(sec);
+  if(!sec || typeof sec !== "object") return "";
+  return PART_ORDER.filter(function(p){ return sec[p]; }).map(function(p){
+    return '<div class="briefpart"><div class="partlabel">' + PART_LABELS[p] + "</div>" +
+           mdish(sec[p]) + "</div>";
+  }).join("");
+}
+
 function briefCardsHTML(brief){
   if(!brief) return "";
   let html = "";
+  let anySection = false;
   if(brief.headline){
     html += '<div class="card brief"><p style="color:var(--rose-soft);font-weight:600;margin:0">' +
             esc(brief.headline) + "</p></div>";
   }
   BRIEF_SECTIONS.forEach(function(s){
-    if(!brief[s[0]]) return;
-    html += '<div class="card brief"><h2>' + s[1] + "</h2>" + mdish(brief[s[0]]) + "</div>";
+    const body = sectionBodyHTML(brief[s[0]]);
+    if(!body) return;
+    anySection = true;
+    html += '<div class="card brief"><h2>' + s[1] + "</h2>" + body + "</div>";
   });
-  if(brief.headline || BRIEF_SECTIONS.some(function(s){ return brief[s[0]]; })){
+  if(brief.headline || anySection){
     html += '<div class="src">Briefing for ' + esc(brief.date || "") +
             (brief.source === "fallback" ? " · written offline by the engine (Claude was unreachable)"
                                          : " · written by Claude") + "</div>";
