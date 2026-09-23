@@ -32,6 +32,9 @@ p{margin:0 0 10px}
 p:last-child{margin-bottom:0}
 button,input,select,textarea{font:inherit;color:inherit}
 .top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.histbanner{background:#241b28;border:1px solid #4a2f45;border-radius:14px;padding:12px 14px;
+  margin-bottom:12px;text-align:center}
+.histbanner span{font-size:14px;color:var(--rose-soft);font-weight:600}
 .sub{color:var(--dim);font-size:13px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
   padding:16px;margin-bottom:12px}
@@ -244,8 +247,13 @@ nav button.on{color:var(--rose-soft)}
 <!-- ------------------------------------------------------------- TODAY -->
 <section id="tab-today">
 
-  <div class="card">
-    <h2>Today at a glance</h2>
+  <div class="histbanner hide" id="histBanner">
+    <span id="histBannerText">Viewing a past day</span>
+    <button class="btn ghost sm" id="backToToday" style="margin-top:8px">Back to today</button>
+  </div>
+
+  <div class="card" id="glanceCard">
+    <h2 id="glanceTitle">Today at a glance</h2>
     <div class="dials" id="dials"></div>
     <div class="basis" id="grounding"></div>
     <div class="bw" id="bandwidth"></div>
@@ -297,7 +305,7 @@ nav button.on{color:var(--rose-soft)}
 
   <div id="briefing"></div>
 
-  <div class="card">
+  <div class="card" id="obsCard">
     <h2>What I observed</h2>
     <div class="sub" id="obs_when">Only fill in what I actually saw — blanks stay blank.</div>
     <label>Day</label>
@@ -364,6 +372,7 @@ nav button.on{color:var(--rose-soft)}
       </div>
       <div class="check"><input type="checkbox" id="mark_approx"><span>I'm not sure of the exact day</span></div>
       <button class="btn ghost sm" id="mark_log">Log observations for this day</button>
+      <button class="btn ghost sm hide" id="view_history">View what was predicted that day</button>
       <div class="note" id="dayinfo"></div>
     </div>
   </div>
@@ -454,7 +463,7 @@ nav button.on{color:var(--rose-soft)}
 <script>
 const EMBED = null;
 const DEFAULT_REPO = "willchu12-git/cyclesync-data";
-const BUILT = "2026-09-23 20:29";
+const BUILT = "2026-09-23 20:41";
 const LOCAL_API = "http://127.0.0.1:8777";
 const GENERIC = {"menstrual": {"energy": 2.2, "mood": 2.6, "workout_interest": 2.0, "intimacy_interest": 2.2}, "follicular": {"energy": 3.8, "mood": 3.8, "workout_interest": 3.8, "intimacy_interest": 3.2}, "ovulatory / fertile": {"energy": 4.2, "mood": 4.0, "workout_interest": 4.2, "intimacy_interest": 3.6}, "early luteal": {"energy": 3.3, "mood": 3.3, "workout_interest": 3.2, "intimacy_interest": 3.0}, "late luteal / premenstrual": {"energy": 2.5, "mood": 2.5, "workout_interest": 2.4, "intimacy_interest": 2.6}, "period expected / overdue": {"energy": 2.6, "mood": 2.6, "workout_interest": 2.5, "intimacy_interest": 2.6}};          /* kept in step with engine/scores.py at build time */
 
@@ -465,7 +474,8 @@ const ls = {
   set: function(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
 };
 
-let STATE = null, BRIEF = null, QA = [], LIVE = null;
+let STATE = null, BRIEF = null, QA = [], LIVE = null, DAY_HISTORY = [];
+let viewingDate = null;                 /* set while looking at a past day's archived snapshot */
 let calCursor = null, selDay = null, tipVerdict = null;
 const picked = {energy:null, mood:null, intimacy_interest:null, workout_interest:null};
 let chosenSyms = [];
@@ -842,11 +852,15 @@ async function send(path, text, message, okMsg){
 async function load(quiet){
   if(EMBED){
     STATE = EMBED.state; BRIEF = EMBED.briefing; QA = EMBED.qa || [];
+    DAY_HISTORY = EMBED.day_history || [];
     $("sync").textContent = "local"; $("sync").className = "chip ok";
     render(); return;
   }
   const cached = ls.get("cs_cache", null);
-  if(cached && !STATE){ STATE = cached.state; BRIEF = cached.briefing; QA = cached.qa || []; render(); }
+  if(cached && !STATE){
+    STATE = cached.state; BRIEF = cached.briefing; QA = cached.qa || [];
+    DAY_HISTORY = cached.dayHistory || []; render();
+  }
   if(!connected()){
     $("sync").textContent = "not connected"; $("sync").className = "chip warn";
     if(!cached) showTab("set");
@@ -855,17 +869,21 @@ async function load(quiet){
   if(!quiet){ $("sync").textContent = "syncing"; $("sync").className = "chip"; }
   $("hrefresh").classList.add("spin");
   try {
-    const [s, b, q] = await Promise.all([
+    const [s, b, q, h] = await Promise.all([
       ghGet("data/store/state.json"),
       ghGet("data/store/briefing.json"),
-      ghGet("data/store/qa.jsonl")
+      ghGet("data/store/qa.jsonl"),
+      ghGet("data/store/day_history.jsonl")
     ]);
     STATE = s ? JSON.parse(s) : null;
     BRIEF = b ? JSON.parse(b) : null;
     QA = (q || "").split("\n").filter(function(x){ return x.trim(); })
           .map(function(x){ try { return JSON.parse(x); } catch(e){ return null; } })
           .filter(Boolean);
-    ls.set("cs_cache", {state:STATE, briefing:BRIEF, qa:QA.slice(-12)});
+    DAY_HISTORY = (h || "").split("\n").filter(function(x){ return x.trim(); })
+          .map(function(x){ try { return JSON.parse(x); } catch(e){ return null; } })
+          .filter(Boolean);
+    ls.set("cs_cache", {state:STATE, briefing:BRIEF, qa:QA.slice(-12), dayHistory:DAY_HISTORY});
     clearConfirmedPending();
     $("sync").textContent = "synced"; $("sync").className = "chip ok";
     render();
@@ -894,16 +912,20 @@ function render(){
   LIVE = recompute();
   $("today").textContent = new Date().toLocaleDateString(undefined,
     {weekday:"long", month:"long", day:"numeric"});
-  renderDash(); renderHero(); renderBrief(); renderCycleReference(); renderCalendar();
+  /* a background sync mid-browse shouldn't yank the user back to live data --
+     only the Today card is frozen on the viewed day; everything else (calendar,
+     trends, etc.) stays live since it's not what's "being viewed" here. */
+  if(viewingDate){ renderHistoricalDay(viewingDate); }
+  else { renderDash(); renderHero(); renderBrief(); }
+  renderCycleReference(); renderCalendar();
   renderTimeline(); renderTrends(); renderQA(); renderFeedback(); renderLoggedToday();
   renderDevice(); ensureFormMatchesDate();
   $("foot").textContent = (STATE && STATE.disclaimer) ? STATE.disclaimer :
     "Not medical advice. Predictions are estimates from sparse data. Her own words always win.";
 }
 
-function renderDash(){
-  const ds = LIVE.dials;
-  $("dials").innerHTML = ds.map(function(d){
+function dialCardsHTML(dials){
+  return (dials || []).map(function(d){
     const unknown = d.value == null;
     return '<div class="dial' + (unknown ? " unknown" : "") + '">' +
       '<div class="k">' + esc(d.label) + "</div>" +
@@ -913,14 +935,9 @@ function renderDash(){
       '<div class="basis">' + esc(d.basis) + '</div>' +
       (d.caveat ? '<div class="caveat">' + esc(d.caveat) + '</div>' : '') + '</div>';
   }).join("");
-  const grounded = ds.filter(function(d){ return d.n; }).length;
-  const est = LIVE.estimate;
-  $("grounding").textContent = est.status === "ok"
-    ? (grounded + " of 4 dials are using her own logs · prediction confidence " +
-       (est.confidence || "--") + " · tap Calendar to correct any day")
-    : "Mark her period days in the Calendar tab to start.";
+}
 
-  const bw = LIVE.bandwidth;
+function applyBandwidth(bw){
   const bwEl = $("bandwidth");
   if(bw){
     bwEl.className = "bw " + bw.level;
@@ -929,6 +946,19 @@ function renderDash(){
   } else {
     bwEl.classList.add("hide");
   }
+}
+
+function renderDash(){
+  const ds = LIVE.dials;
+  $("dials").innerHTML = dialCardsHTML(ds);
+  const grounded = ds.filter(function(d){ return d.n; }).length;
+  const est = LIVE.estimate;
+  $("grounding").textContent = est.status === "ok"
+    ? (grounded + " of 4 dials are using her own logs · prediction confidence " +
+       (est.confidence || "--") + " · tap Calendar to correct any day")
+    : "Mark her period days in the Calendar tab to start.";
+
+  applyBandwidth(LIVE.bandwidth);
 
   const fresh = briefMatches();
   $("takeaway").textContent = (fresh && BRIEF && BRIEF.takeaway) ? BRIEF.takeaway
@@ -960,8 +990,7 @@ function briefMatches(){
          b.last_period_start === e.last_period_start;
 }
 
-function renderHero(){
-  const e = LIVE.estimate;
+function applyHero(e){
   const C = 2 * Math.PI * 80;
   if(!e || e.status !== "ok"){
     $("ringfg").setAttribute("stroke-dasharray", "0 " + C);
@@ -978,19 +1007,44 @@ function renderHero(){
   $("count").textContent = d > 1 ? ("Period expected in " + d + " days · ~" + fmt(e.predicted_next_period))
     : d === 1 ? "Period expected tomorrow"
     : d === 0 ? "Period expected today"
-    : (Math.abs(d) + " days past the estimate");
-  $("window").textContent = "Anywhere from " + fmt(e.predicted_window[0]) + " to " +
-    fmt(e.predicted_window[1]) + " · typical cycle " + span + " ± " +
-    e.cycle_length_variability_days + " days";
-  $("conf").textContent = e.confidence + " confidence · " + e.cycles_used + " cycles used";
+    : d != null ? (Math.abs(d) + " days past the estimate") : "";
+  $("window").textContent = e.predicted_window ? ("Anywhere from " + fmt(e.predicted_window[0]) +
+    " to " + fmt(e.predicted_window[1]) + " · typical cycle " + span +
+    (e.cycle_length_variability_days != null ? " ± " + e.cycle_length_variability_days + " days" : "")) : "";
+  $("conf").textContent = e.confidence + (e.cycles_used != null ? " confidence · " + e.cycles_used +
+    " cycles used" : " confidence");
   $("conf").className = "chip " + e.confidence;
+}
+
+function renderHero(){
+  applyHero(LIVE.estimate);
   $("period_today").classList.toggle("hide", !!LIVE.marks[today()]);
+}
+
+const BRIEF_SECTIONS = [["overview","Overview"],["show_up","How to show up for her"],
+                        ["connection","Connection & intimacy"],["movement","Movement"]];
+
+function briefCardsHTML(brief){
+  if(!brief) return "";
+  let html = "";
+  if(brief.headline){
+    html += '<div class="card brief"><p style="color:var(--rose-soft);font-weight:600;margin:0">' +
+            esc(brief.headline) + "</p></div>";
+  }
+  BRIEF_SECTIONS.forEach(function(s){
+    if(!brief[s[0]]) return;
+    html += '<div class="card brief"><h2>' + s[1] + "</h2>" + mdish(brief[s[0]]) + "</div>";
+  });
+  if(brief.headline || BRIEF_SECTIONS.some(function(s){ return brief[s[0]]; })){
+    html += '<div class="src">Briefing for ' + esc(brief.date || "") +
+            (brief.source === "fallback" ? " · written offline by the engine (Claude was unreachable)"
+                                         : " · written by Claude") + "</div>";
+  }
+  return html;
 }
 
 function renderBrief(){
   const box = $("briefing");
-  const secs = [["overview","Overview"],["show_up","How to show up for her"],
-                ["connection","Connection & intimacy"],["movement","Movement"]];
   let html = "";
   if(!briefMatches() && LIVE.estimate.status === "ok"){
     html += '<div class="stale">The cycle picture changed since this briefing was written' +
@@ -1005,18 +1059,68 @@ function renderBrief(){
       '<code>py engine/brief.py</code> on the PC.</p></div>';
     return;
   }
-  if(BRIEF.headline){
-    html += '<div class="card brief"><p style="color:var(--rose-soft);font-weight:600;margin:0">' +
-            esc(BRIEF.headline) + "</p></div>";
+  box.innerHTML = html + briefCardsHTML(Object.assign({}, BRIEF, {date: BRIEF.date}));
+}
+
+/* ------------------------------------------------------- past-day viewer */
+function findDaySnapshot(iso){
+  for(let i = DAY_HISTORY.length - 1; i >= 0; i--){
+    if(DAY_HISTORY[i].date === iso) return DAY_HISTORY[i];
   }
-  secs.forEach(function(s){
-    if(!BRIEF[s[0]]) return;
-    html += '<div class="card brief"><h2>' + s[1] + "</h2>" + mdish(BRIEF[s[0]]) + "</div>";
-  });
-  html += '<div class="src">Briefing for ' + esc(BRIEF.date || "") +
-          (BRIEF.source === "fallback" ? " · written offline by the engine (Claude was unreachable)"
-                                       : " · written by Claude") + "</div>";
-  box.innerHTML = html;
+  return null;
+}
+
+function renderHistoricalDay(iso){
+  const snap = findDaySnapshot(iso);
+  const label = new Date(iso + "T12:00:00").toLocaleDateString(undefined,
+    {weekday:"long", month:"long", day:"numeric", year:"numeric"});
+  $("histBannerText").textContent = "Viewing " + label + " — this is what was shown that day";
+  $("histBanner").classList.remove("hide");
+  $("glanceTitle").textContent = label.split(",")[0] + " at a glance";
+  $("obsCard").classList.add("hide");
+  $("period_today").classList.add("hide");
+
+  if(!snap){
+    $("dials").innerHTML = "";
+    $("grounding").textContent = "";
+    applyBandwidth(null);
+    $("takeaway").textContent = "No archive exists for this day — either it's before the app " +
+      "started keeping this history, or nothing was ever generated for it.";
+    $("tiptxt").textContent = "--";
+    applyHero(null);
+    $("briefing").innerHTML = "";
+    $("window").textContent = "";
+    return;
+  }
+
+  $("dials").innerHTML = dialCardsHTML(snap.dials);
+  const grounded = (snap.dials || []).filter(function(d){ return d.n; }).length;
+  $("grounding").textContent = grounded + " of " + (snap.dials || []).length +
+    " dials were using her own logs that day · prediction confidence " +
+    (snap.estimate && snap.estimate.confidence || "--");
+  applyBandwidth(snap.bandwidth);
+
+  const b = snap.briefing || {};
+  $("takeaway").textContent = b.takeaway || "No takeaway text archived for this day.";
+  $("tiptxt").textContent = b.tip || "--";
+
+  applyHero(snap.estimate);
+  $("briefing").innerHTML = briefCardsHTML(Object.assign({}, b, {date: snap.date}));
+}
+
+function showHistoricalDay(iso){
+  viewingDate = iso;
+  showTab("today");
+  renderHistoricalDay(iso);
+  window.scrollTo(0, 0);
+}
+
+function exitHistoricalView(){
+  viewingDate = null;
+  $("histBanner").classList.add("hide");
+  $("glanceTitle").textContent = "Today at a glance";
+  $("obsCard").classList.remove("hide");
+  render();
 }
 
 const PHASE_SHORT = {"menstrual":"Period", "follicular":"Follicular",
@@ -1385,6 +1489,7 @@ function showDayEditor(iso){
     if(o.length) bits.push("Logged: " + o.join(" · ") + ".");
   }
   $("dayinfo").textContent = bits.join(" ");
+  $("view_history").classList.toggle("hide", !findDaySnapshot(iso));
 }
 
 async function markDay(iso, isPeriod){
@@ -1685,9 +1790,15 @@ $("mark_yes").addEventListener("click", function(){ if(selDay) markDay(selDay, t
 $("mark_no").addEventListener("click", function(){ if(selDay) markDay(selDay, false); });
 $("mark_log").addEventListener("click", function(){
   if(!selDay) return;
+  if(viewingDate) exitHistoricalView();
   $("l_date").value = selDay; showTab("today"); renderLoggedToday(); loadLogIntoForm(selDay);
   toast("Logging observations for " + fmt(selDay));
 });
+$("view_history").addEventListener("click", function(){
+  if(!selDay) return;
+  showHistoricalDay(selDay);
+});
+$("backToToday").addEventListener("click", exitHistoricalView);
 $("period_today").addEventListener("click", function(){ markDay(today(), true); });
 $("tip_up").addEventListener("click", function(){
   tipVerdict = "worked"; $("tip_up").classList.add("on"); $("tip_down").classList.remove("on");
