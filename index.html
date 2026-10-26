@@ -108,7 +108,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 #trendChart{width:100%;overflow-x:auto;position:relative;touch-action:pan-y}
 #trendChart svg{display:block;width:100%;height:auto}
 #trendChart #chartCapture{cursor:crosshair}
-#trendChart.expanded{position:fixed;left:12px;right:12px;top:12px;bottom:12px;z-index:60;
+#trendChart.expanded{position:fixed;left:calc(var(--rail,0px) + 12px);right:12px;top:12px;bottom:12px;
+  max-width:1000px;margin:0 auto;z-index:60;
   background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;
   padding-top:44px;overflow-y:auto;touch-action:none}
 body.chart-modal-open{overflow:hidden}
@@ -234,6 +235,91 @@ nav button{flex:1;background:none;border:none;color:var(--faint);font-size:10.5p
   align-items:center;gap:3px}
 nav button .ic{font-size:19px;line-height:1}
 nav button.on{color:var(--rose-soft)}
+
+/* ======================================================================
+   Responsive layout -- driven by width and height, not by any one device,
+   so it holds up on a cover screen, an unfolded tablet-size screen, and
+   everything in between (including the moment of unfolding, live).
+
+     compact  < 700px    phone / cover screen: single column, bottom tab bar
+     medium   700-999    inner screen in portrait: side rail, wider single
+                         column, paired cards on the other tabs
+     wide     >= 1000    inner screen in landscape: side rail, Today splits
+                         into two columns (glance + ring | briefing)
+   ====================================================================== */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+button,input,select,textarea,label,summary{touch-action:manipulation}
+
+/* Today: wrappers vanish on phones so the original card order is untouched */
+.twocol{display:flex;flex-direction:column}
+.colA,.colB{display:contents}
+#glanceCard{order:1}#refCard{order:2}#hero{order:3}#briefing{order:4}#obsCard{order:5}
+
+/* finger-sized targets on touch screens (Apple's 44pt guidance) */
+@media (pointer:coarse){
+  .iconbtn{min-width:44px;min-height:44px}
+  .rangebtns button,.tipbtns button,.btn.sm{min-height:44px}
+  .scale button{min-height:46px}
+  .sym{min-height:40px;display:inline-flex;align-items:center}
+  .check input{width:24px;height:24px}
+}
+
+/* short screens (a phone on its side, a wide-and-short cover display) */
+@media (max-height:520px) and (max-width:699px){
+  body{padding-bottom:calc(58px + env(safe-area-inset-bottom))}
+  nav{padding:3px 0 calc(3px + env(safe-area-inset-bottom))}
+  nav button{flex-direction:row;justify-content:center;gap:7px;padding:7px 0;font-size:11.5px}
+  nav button .ic{font-size:16px}
+  .toast{bottom:calc(60px + env(safe-area-inset-bottom))}
+  .ring-wrap{width:140px;height:140px}
+  .ring{width:140px;height:140px}
+  .day-num{font-size:34px}
+}
+
+/* tablet-size screens: the tab bar becomes a left rail, content gets room */
+@media (min-width:700px){
+  :root{--rail:84px;--gut:22px}
+  body{
+    max-width:none;margin:0;
+    padding-left:calc(var(--rail) + env(safe-area-inset-left) + max(var(--gut), calc((100vw - var(--rail) - 1180px) / 2)));
+    padding-right:calc(max(var(--gut), calc((100vw - var(--rail) - 1180px) / 2)) + env(safe-area-inset-right));
+    padding-bottom:calc(36px + env(safe-area-inset-bottom));
+  }
+  .card{padding:18px}
+  nav{
+    left:0;right:auto;top:0;bottom:0;
+    width:calc(var(--rail) + env(safe-area-inset-left));
+    flex-direction:column;justify-content:flex-start;align-items:stretch;gap:4px;
+    padding:calc(22px + env(safe-area-inset-top)) 0 calc(22px + env(safe-area-inset-bottom)) env(safe-area-inset-left);
+    border-top:none;border-right:1px solid var(--line);
+  }
+  nav button{flex:none;padding:13px 0;font-size:11px;gap:6px}
+  nav button .ic{font-size:23px}
+  .toast{bottom:calc(26px + env(safe-area-inset-bottom));left:calc(50% + var(--rail) / 2)}
+
+  /* pairs of cards sit side by side instead of stacking */
+  #tab-cal:not(.hide),#tab-ask:not(.hide),#tab-set:not(.hide){
+    display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 18px;align-items:start}
+  #tab-cal:not(.hide){grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
+  .tl-row{grid-template-columns:62px 1fr auto}
+  .dial .w{font-size:13px}
+}
+
+/* inner screen in landscape: Today becomes two columns */
+@media (min-width:1000px){
+  .twocol{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:0 24px;align-items:start}
+  .colA,.colB{display:block;min-width:0}
+  #glanceCard,#refCard,#hero,#briefing,#obsCard{order:0}
+  #tab-cal:not(.hide){grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}
+}
+
+/* the rail is tall and narrow: keep it usable when the screen is short too */
+@media (min-width:700px) and (max-height:520px){
+  nav{padding-top:calc(8px + env(safe-area-inset-top));padding-bottom:calc(8px + env(safe-area-inset-bottom));gap:0}
+  nav button{padding:7px 0}
+  nav button .ic{font-size:18px}
+}
 </style>
 </head>
 <body>
@@ -257,6 +343,8 @@ nav button.on{color:var(--rose-soft)}
     <button class="btn ghost sm" id="backToToday" style="margin-top:8px">Back to today</button>
   </div>
 
+  <div class="twocol">
+  <div class="colA">
   <div class="card" id="glanceCard">
     <h2 id="glanceTitle">Today at a glance</h2>
     <div class="dials" id="dials"></div>
@@ -277,7 +365,7 @@ nav button.on{color:var(--rose-soft)}
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="refCard">
     <details id="refWrap">
       <summary><h2 style="display:inline">Typical cycle characteristics</h2></summary>
       <div class="sub">General population research, not personalized and not a prediction for
@@ -307,7 +395,9 @@ nav button.on{color:var(--rose-soft)}
     <div style="margin-top:10px"><span class="chip" id="conf"></span></div>
     <button class="btn ghost sm" id="period_today">She started her period today</button>
   </div>
+  </div><!-- /colA -->
 
+  <div class="colB">
   <div id="briefing"></div>
 
   <div class="card" id="obsCard">
@@ -351,6 +441,8 @@ nav button.on{color:var(--rose-soft)}
     <textarea id="l_note" placeholder="what she said, how the evening went, anything worth remembering"></textarea>
     <button class="btn" id="l_save">Save observations</button>
   </div>
+  </div><!-- /colB -->
+  </div><!-- /twocol -->
 </section>
 
 <!-- ---------------------------------------------------------- CALENDAR -->
@@ -451,6 +543,7 @@ nav button.on{color:var(--rose-soft)}
     <h2>This device</h2>
     <div class="note" id="s_queue"></div>
     <div class="note" id="s_built"></div>
+    <div class="note" id="s_viewport"></div>
   </div>
 </section>
 
@@ -468,7 +561,7 @@ nav button.on{color:var(--rose-soft)}
 <script>
 const EMBED = null;
 const DEFAULT_REPO = "willchu12-git/cyclesync-data";
-const BUILT = "2026-10-26 17:19";
+const BUILT = "2026-10-26 20:20";
 const LOCAL_API = "http://127.0.0.1:8777";
 const GENERIC = {"menstrual": {"energy": 2.2, "mood": 2.6, "workout_interest": 2.0, "intimacy_interest": 2.2}, "follicular": {"energy": 3.8, "mood": 3.8, "workout_interest": 3.8, "intimacy_interest": 3.2}, "ovulatory / fertile": {"energy": 4.2, "mood": 4.0, "workout_interest": 4.2, "intimacy_interest": 3.6}, "early luteal": {"energy": 3.3, "mood": 3.3, "workout_interest": 3.2, "intimacy_interest": 3.0}, "late luteal / premenstrual": {"energy": 2.5, "mood": 2.5, "workout_interest": 2.4, "intimacy_interest": 2.6}, "period expected / overdue": {"energy": 2.6, "mood": 2.6, "workout_interest": 2.5, "intimacy_interest": 2.6}};          /* kept in step with engine/scores.py at build time */
 
@@ -499,6 +592,12 @@ function fmt(iso){
   return new Date(iso + "T12:00:00").toLocaleDateString(undefined, {month:"short", day:"numeric"});
 }
 function today(){ return new Date().toLocaleDateString("en-CA"); }
+
+/* which of the three layouts is active -- mirrors the CSS breakpoints (700 / 1000) */
+function layoutMode(){
+  const w = window.innerWidth;
+  return w >= 1000 ? "wide" : (w >= 700 ? "medium" : "compact");
+}
 function dnum(iso){ return Math.floor(new Date(iso + "T12:00:00").getTime() / 86400000); }
 function diso(n){ return new Date(n * 86400000 + 43200000).toLocaleDateString("en-CA"); }
 function addDays(iso, n){ return diso(dnum(iso) + n); }
@@ -1188,7 +1287,7 @@ function renderRangeButtons(){
 }
 
 function chartGeom(history, fc){
-  const W = 700, H = chartExpanded ? 420 : 230, padB = 26;
+  const W = 700, H = chartExpanded ? 420 : (layoutMode() === "compact" ? 230 : 290), padB = 26;
   const padL = CHART_PAD.L, padR = CHART_PAD.R, padT = CHART_PAD.T;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const n = history.length + fc.length;
@@ -1635,7 +1734,35 @@ function renderDevice(){
     : (pd ? pd + " local edit(s) not yet confirmed by the cloud." : "Everything is synced.");
   $("s_built").textContent = "App build " + BUILT + (STATE && STATE.generated_at ?
     " · data generated " + STATE.generated_at : "");
+  const touch = window.matchMedia && matchMedia("(pointer:coarse)").matches ? "touch" : "pointer";
+  $("s_viewport").textContent = "Screen " + window.innerWidth + " × " + window.innerHeight +
+    " px · " + layoutMode() + " layout · " + (Math.round((window.devicePixelRatio || 1) * 10) / 10) + "× · " + touch +
+    (window.innerWidth > window.innerHeight ? " · landscape" : " · portrait");
 }
+
+/* the screen can change under us -- rotating, or unfolding to the larger inner display.
+   CSS reflows on its own; this re-renders the bits JS draws (the chart) and the readout. */
+let lastLayout = null, resizeTimer = null;
+function onLayoutChange(){
+  const m = layoutMode();
+  document.documentElement.dataset.layout = m;
+  if(lastLayout !== null && m !== lastLayout && typeof renderTrends === "function" && STATE){
+    renderTrends();
+  }
+  lastLayout = m;
+  if($("s_viewport")) renderDevice();
+}
+window.addEventListener("resize", function(){
+  clearTimeout(resizeTimer); resizeTimer = setTimeout(onLayoutChange, 120);
+});
+window.addEventListener("orientationchange", function(){ setTimeout(onLayoutChange, 250); });
+/* belt and braces: also fire whenever a breakpoint is actually crossed (folding/unfolding) */
+["(min-width:700px)", "(min-width:1000px)"].forEach(function(q){
+  const mq = window.matchMedia && matchMedia(q);
+  if(!mq) return;
+  if(mq.addEventListener) mq.addEventListener("change", onLayoutChange);
+  else if(mq.addListener) mq.addListener(onLayoutChange);
+});
 
 /* ------------------------------------------------------------- controls */
 const SYMPTOMS = ["cramps","fatigue","headache","bloating","back pain","breast tenderness",
@@ -1838,6 +1965,7 @@ $("fb_worked").addEventListener("click", function(){ sendFeedback("worked", $("f
 $("fb_missed").addEventListener("click", function(){ sendFeedback("missed", $("fb").value); });
 $("fb_note").addEventListener("click", function(){ sendFeedback("note", $("fb").value); });
 
+onLayoutChange();
 load();
 if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(function(){}); }
 </script>
